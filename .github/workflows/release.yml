@@ -46,6 +46,7 @@ jobs:
           VERSION="$(jq -r .version custom_components/proxmox_panel/manifest.json)"
           grep -q "VERSION = \"$VERSION\"" custom_components/proxmox_panel/const.py
           grep -q "PROXMOX_PANEL_VERSION = \"$VERSION\"" custom_components/proxmox_panel/frontend/proxmox-panel.js
+          grep -q "PROXMOX_CARDS_VERSION = \"$VERSION\"" custom_components/proxmox_panel/frontend/proxmox-cards.js
           grep -q "\"version\": \"$VERSION\"" package.json
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then

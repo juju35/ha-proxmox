@@ -36,6 +36,7 @@ jobs:
           VERSION="$(jq -r .version custom_components/proxmox_panel/manifest.json)"
           grep -q "VERSION = \"$VERSION\"" custom_components/proxmox_panel/const.py || { echo "::error file=custom_components/proxmox_panel/const.py::version $VERSION not found in custom_components/proxmox_panel/const.py"; exit 1; }
           grep -q "PROXMOX_PANEL_VERSION = \"$VERSION\"" custom_components/proxmox_panel/frontend/proxmox-panel.js || { echo "::error file=custom_components/proxmox_panel/frontend/proxmox-panel.js::version $VERSION not found in custom_components/proxmox_panel/frontend/proxmox-panel.js"; exit 1; }
+          grep -q "PROXMOX_CARDS_VERSION = \"$VERSION\"" custom_components/proxmox_panel/frontend/proxmox-cards.js || { echo "::error file=custom_components/proxmox_panel/frontend/proxmox-cards.js::version $VERSION not found in custom_components/proxmox_panel/frontend/proxmox-cards.js"; exit 1; }
           grep -q "\"version\": \"$VERSION\"" package.json || { echo "::error file=package.json::version $VERSION not found in package.json"; exit 1; }
           test "$(node -p "require('./package-lock.json').version")" = "$VERSION" || { echo "::error file=package-lock.json::package-lock.json is not at $VERSION (npm install)"; exit 1; }
           grep -q "^## $VERSION " CHANGELOG.md || { echo "::error file=CHANGELOG.md::no '## $VERSION' entry in CHANGELOG.md"; exit 1; }

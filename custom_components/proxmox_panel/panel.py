@@ -3,9 +3,12 @@
 The panel (``frontend/proxmox-panel.js``) has six tabs: Nodes, Virtual machines, Containers, Storage, Backups and
 Settings. It reads the states of the Proxmox VE entities and acts by pressing their buttons, so it only needs:
 
-- ``proxmox_panel/inventory``: the nodes, virtual machines, containers and storages with their entity ids
-  (administrators, or everyone when the panel is not kept for administrators);
-- ``proxmox_panel/settings`` / ``proxmox_panel/update_settings``: the settings (options of the entry), administrators.
+- ``proxmox_panel/inventory``: the nodes, virtual machines, containers and storages with their entity ids;
+- ``proxmox_panel/settings`` / ``proxmox_panel/update_settings``: the settings (options of the entry);
+- ``proxmox_panel/cards``: what the Lovelace cards need (the inventory and whether actions are confirmed).
+
+The panel and its commands are for administrators only; the cards' command answers every user, as the cards show
+values every user can read in the states anyway (their actions are offered to administrators only).
 """
 
 from __future__ import annotations
@@ -18,7 +21,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 
 from .const import (
-    CONF_ADMIN_ONLY,
+    CONF_CONFIRM_ACTIONS,
     DEFAULTS,
     DOMAIN,
     PANEL_ICON,
@@ -31,8 +34,9 @@ from .discovery import async_inventory
 
 
 def settings(entry: ConfigEntry | None) -> dict[str, Any]:
-    """The settings, defaults filled in."""
-    return {**DEFAULTS, **(entry.options if entry else {})}
+    """The settings, defaults filled in (an option no longer offered is left out)."""
+    options = entry.options if entry else {}
+    return {key: options.get(key, default) for key, default in DEFAULTS.items()}
 
 
 def _entry(hass: HomeAssistant) -> ConfigEntry | None:
@@ -40,8 +44,8 @@ def _entry(hass: HomeAssistant) -> ConfigEntry | None:
     return entries[0] if entries else None
 
 
-async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Add Proxmox to the sidebar, for administrators only unless the settings open it to everyone."""
+async def async_register_panel(hass: HomeAssistant) -> None:
+    """Add Proxmox to the sidebar, for administrators only."""
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=PANEL_PATH,
@@ -49,7 +53,7 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
         sidebar_title=PANEL_TITLE,
         sidebar_icon=PANEL_ICON,
         module_url=f"{PANEL_URL}?v={VERSION}",
-        require_admin=settings(entry)[CONF_ADMIN_ONLY],
+        require_admin=True,
         config={"version": VERSION},
     )
 
@@ -57,19 +61,23 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
 @callback
 def async_register_commands(hass: HomeAssistant) -> None:
     """The panel's WebSocket commands."""
-    for command in (_ws_inventory, _ws_settings, _ws_update_settings):
+    for command in (_ws_inventory, _ws_cards, _ws_settings, _ws_update_settings):
         websocket_api.async_register_command(hass, command)
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/inventory"})
+@websocket_api.require_admin
 @callback
 def _ws_inventory(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict) -> None:
+    connection.send_result(msg["id"], {**async_inventory(hass).as_dict(), "settings": settings(_entry(hass))})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/cards"})
+@callback
+def _ws_cards(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict) -> None:
     current = settings(_entry(hass))
-    if current[CONF_ADMIN_ONLY] and not connection.user.is_admin:
-        connection.send_error(msg["id"], websocket_api.ERR_UNAUTHORIZED, "Administrators only")
-        return
     connection.send_result(
-        msg["id"], {**async_inventory(hass).as_dict(), "settings": current, "admin": connection.user.is_admin}
+        msg["id"], {**async_inventory(hass).as_dict(), "confirm_actions": current[CONF_CONFIRM_ACTIONS]}
     )
 
 

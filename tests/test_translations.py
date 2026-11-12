@@ -45,7 +45,7 @@ def test_config_flow_strings_in_every_language():
 
 
 def test_panel_languages_have_every_key_and_placeholder():
-    source = (BASE / "frontend" / "proxmox-panel.js").read_text(encoding="utf-8")
+    source = (BASE / "frontend" / "proxmox-common.js").read_text(encoding="utf-8")
     block = re.search(r"const PROXMOX_PANEL_EN = \{(.*?)\n\};", source, re.DOTALL).group(1)
     english = dict(re.findall(r'^\s+(\w+): "((?:[^"\\]|\\.)*)",$', block, re.MULTILINE))
     files = {p.stem: json.loads(p.read_text(encoding="utf-8")) for p in (BASE / "frontend" / "i18n").glob("*.json")}
