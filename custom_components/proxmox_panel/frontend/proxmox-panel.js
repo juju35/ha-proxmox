@@ -47,7 +47,7 @@ import {
   PROXMOX_VARS,
 } from "./proxmox-common.js";
 
-export const PROXMOX_PANEL_VERSION = "0.3.0";
+export const PROXMOX_PANEL_VERSION = "1.0.0";
 const PROXMOX_PANEL_TABS = ["nodes", "vms", "containers", "storage", "backups", "settings"];
 
 export class ProxmoxPanel extends HTMLElement {
