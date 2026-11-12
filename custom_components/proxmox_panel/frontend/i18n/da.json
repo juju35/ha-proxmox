@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "I fanerne VM’er og Containere.",
   "s_confirm": "Spørg før stop eller genstart",
   "s_confirm_hint": "Stop, nedlukning, nulstilling, genstart, dvale og handlinger for hele noden.",
-  "s_admin": "Forbehold panelet til administratorer",
-  "s_admin_hint": "Fra: alle ser panelet; fanen Indstillinger forbliver for administratorer.",
   "s_hide_storage": "Skjul inaktivt lager",
   "s_hide_storage_hint": "Lager, der er deaktiveret eller ikke aktivt.",
   "save": "Gem",

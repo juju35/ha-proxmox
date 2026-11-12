@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "A VM-ek és Konténerek lapon.",
   "s_confirm": "Kérdezzen leállítás vagy újraindítás előtt",
   "s_confirm_hint": "Leállítás, kikapcsolás, alaphelyzet, újraindítás, hibernálás és a teljes csomópontra vonatkozó műveletek.",
-  "s_admin": "A panel csak rendszergazdáknak",
-  "s_admin_hint": "Ki: mindenki látja a panelt; a Beállítások lap a rendszergazdáké marad.",
   "s_hide_storage": "Inaktív tárolók elrejtése",
   "s_hide_storage_hint": "Letiltott vagy nem aktív tárolók.",
   "save": "Mentés",

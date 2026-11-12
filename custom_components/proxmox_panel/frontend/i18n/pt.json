@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "Nos separadores VM e Contentores.",
   "s_confirm": "Perguntar antes de parar ou reiniciar",
   "s_confirm_hint": "Parar, encerrar, repor, reiniciar, hibernar e as ações de todo o nó.",
-  "s_admin": "Reservar o painel aos administradores",
-  "s_admin_hint": "Desativado: todos veem o painel; o separador Definições continua reservado aos administradores.",
   "s_hide_storage": "Ocultar o armazenamento inativo",
   "s_hide_storage_hint": "Armazenamento desativado ou inativo.",
   "save": "Guardar",

@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "In den Tabs VMs und Container.",
   "s_confirm": "Vor dem Stoppen oder Neustarten fragen",
   "s_confirm_hint": "Stoppen, Herunterfahren, Zurücksetzen, Neustart, Ruhezustand und knotenweite Aktionen.",
-  "s_admin": "Panel für Administratoren reservieren",
-  "s_admin_hint": "Aus: Alle sehen das Panel; der Tab Einstellungen bleibt Administratoren vorbehalten.",
   "s_hide_storage": "Inaktiven Speicher ausblenden",
   "s_hide_storage_hint": "Deaktivierter oder nicht aktiver Speicher.",
   "save": "Speichern",

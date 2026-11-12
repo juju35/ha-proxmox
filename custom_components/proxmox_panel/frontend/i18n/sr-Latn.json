@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "Na karticama VM i Kontejneri.",
   "s_confirm": "Pitaj pre zaustavljanja ili ponovnog pokretanja",
   "s_confirm_hint": "Zaustavljanje, gašenje, resetovanje, ponovno pokretanje, hibernacija i radnje za ceo čvor.",
-  "s_admin": "Rezerviši panel za administratore",
-  "s_admin_hint": "Isključeno: svi vide panel; kartica Podešavanja ostaje za administratore.",
   "s_hide_storage": "Sakrij neaktivno skladište",
   "s_hide_storage_hint": "Skladište koje je onemogućeno ili nije aktivno.",
   "save": "Sačuvaj",

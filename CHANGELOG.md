@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0 - 2026-11-12
+
+### Changes
+- The panel is for **administrators only**, always: the *Keep the panel for administrators* setting is gone, the panel is registered for administrators and its commands refuse other users. An installation that had opened it to everyone gets it back for administrators only after the update.
+
 ## 0.1.0 - 2026-11-12
 
 ### Features

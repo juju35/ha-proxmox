@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "I flikarna VM:ar och Containrar.",
   "s_confirm": "Fråga innan stopp eller omstart",
   "s_confirm_hint": "Stopp, avstängning, återställning, omstart, viloläge och åtgärder för hela noden.",
-  "s_admin": "Reservera panelen för administratörer",
-  "s_admin_hint": "Av: alla ser panelen; fliken Inställningar är kvar för administratörer.",
   "s_hide_storage": "Dölj inaktiv lagring",
   "s_hide_storage_hint": "Lagring som är inaktiverad eller inte aktiv.",
   "save": "Spara",

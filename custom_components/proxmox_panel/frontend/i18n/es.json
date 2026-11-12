@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "En las pestañas VM y Contenedores.",
   "s_confirm": "Preguntar antes de detener o reiniciar",
   "s_confirm_hint": "Detener, apagar, restablecer, reiniciar, hibernar y las acciones de todo el nodo.",
-  "s_admin": "Reservar el panel a los administradores",
-  "s_admin_hint": "Desactivado: todos ven el panel; la pestaña Ajustes sigue reservada a los administradores.",
   "s_hide_storage": "Ocultar el almacenamiento inactivo",
   "s_hide_storage_hint": "Almacenamiento desactivado o inactivo.",
   "save": "Guardar",

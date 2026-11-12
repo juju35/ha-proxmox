@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "Nelle schede VM e Container.",
   "s_confirm": "Chiedi prima di arrestare o riavviare",
   "s_confirm_hint": "Arresto, spegnimento, reimpostazione, riavvio, ibernazione e azioni sull’intero nodo.",
-  "s_admin": "Riserva il pannello agli amministratori",
-  "s_admin_hint": "Disattivato: tutti vedono il pannello; la scheda Impostazioni resta riservata agli amministratori.",
   "s_hide_storage": "Nascondi l’archiviazione inattiva",
   "s_hide_storage_hint": "Archiviazione disattivata o non attiva.",
   "save": "Salva",

@@ -13,12 +13,13 @@
  * - Storage: one gauge per storage, with its active / shared state;
  * - Backups: the last backup of each node (its sensors are disabled by default in the integration) and a manual
  *   snapshot of each machine;
- * - Settings (administrators): stopped machines shown or not, confirmation of the actions that stop or restart,
- *   panel kept for administrators, inactive storage hidden.
+ * - Settings: stopped machines shown or not, confirmation of the actions that stop or restart, inactive storage
+ *   hidden.
+ * The panel is for administrators only (registered with require_admin, its commands too).
  * English is built in; the other languages are loaded on demand from /proxmox_panel/i18n/<lang>.json.
  */
 
-const PROXMOX_PANEL_VERSION = "0.1.0";
+const PROXMOX_PANEL_VERSION = "0.2.0";
 const PROXMOX_PANEL_TABS = ["nodes", "vms", "containers", "storage", "backups", "settings"];
 const PROXMOX_PANEL_LANGS = ["en", "fr", "de", "es", "sr", "sr-Latn", "it", "nl", "pt", "pl", "ro", "da", "sv", "bg", "ru", "uk", "hu", "sk", "cs", "sl", "lv", "el"];
 // Actions that stop or restart something: confirmed first when the setting asks for it
@@ -114,8 +115,6 @@ const PROXMOX_PANEL_EN = {
   s_show_stopped_hint: "In the VMs and Containers tabs.",
   s_confirm: "Ask before stopping or restarting",
   s_confirm_hint: "Stop, shut down, reset, restart, hibernate and the node-wide actions.",
-  s_admin: "Keep the panel for administrators",
-  s_admin_hint: "Off: everyone sees the panel; the Settings tab stays for administrators.",
   s_hide_storage: "Hide inactive storage",
   s_hide_storage_hint: "Storage that is disabled or not active.",
   save: "Save",
@@ -561,8 +560,7 @@ class ProxmoxPanel extends HTMLElement {
   // ── Tabs ──
 
   _tabs() {
-    // Settings only for administrators
-    return PROXMOX_PANEL_TABS.filter((t) => t !== "settings" || this._inv?.admin !== false);
+    return PROXMOX_PANEL_TABS;
   }
 
   _goTab(tab, focus) {
@@ -603,7 +601,7 @@ class ProxmoxPanel extends HTMLElement {
       <div class="toolbar">
         <ha-menu-button></ha-menu-button>
         <span class="grow">${esc(this._t("title"))}</span>
-        ${this._inv?.admin === false ? "" : `<a href="/config/integrations/integration/proxmoxve" title="${esc(this._t("open_integration"))}" aria-label="${esc(this._t("open_integration"))}">${proxmoxPanelIcon("cog")}</a>`}
+        <a href="/config/integrations/integration/proxmoxve" title="${esc(this._t("open_integration"))}" aria-label="${esc(this._t("open_integration"))}">${proxmoxPanelIcon("cog")}</a>
       </div>
       <div class="tabs" role="tablist">${tabs
         .map((tab) => {
@@ -996,7 +994,6 @@ class ProxmoxPanel extends HTMLElement {
     return `<div class="box form">
         ${toggle("show_stopped", "s_show_stopped")}
         ${toggle("confirm_actions", "s_confirm")}
-        ${toggle("admin_only", "s_admin")}
         ${toggle("hide_inactive_storage", "s_hide_storage")}
         <div class="bar-save"><button class="act" data-action="save"${changed ? "" : " disabled"}>${esc(this._t("save"))}</button>
           ${this._saved ? `<span class="note good" role="status">${esc(this._t("saved"))}</span>` : ""}</div></div>`;

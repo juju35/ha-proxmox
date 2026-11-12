@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "Na zavihkih VM in Vsebniki.",
   "s_confirm": "Vprašaj pred ustavitvijo ali vnovičnim zagonom",
   "s_confirm_hint": "Ustavitev, izklop, ponastavitev, vnovični zagon, mirovanje in dejanja za celotno vozlišče.",
-  "s_admin": "Ploščo pridrži skrbnikom",
-  "s_admin_hint": "Izklopljeno: ploščo vidijo vsi; zavihek Nastavitve ostane skrbnikom.",
   "s_hide_storage": "Skrij neaktivne shrambe",
   "s_hide_storage_hint": "Shrambe, ki so onemogočene ali neaktivne.",
   "save": "Shrani",

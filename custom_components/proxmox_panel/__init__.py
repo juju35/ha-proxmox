@@ -35,9 +35,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Add the panel to the sidebar; settings changes register it again (who may open it)."""
-    await async_register_panel(hass, entry)
-    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
+    """Add the panel to the sidebar (administrators only)."""
+    await async_register_panel(hass)
     return True
 
 
@@ -45,8 +44,3 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Remove the panel from the sidebar."""
     frontend.async_remove_panel(hass, PANEL_PATH)
     return True
-
-
-async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    frontend.async_remove_panel(hass, PANEL_PATH)
-    await async_register_panel(hass, entry)
