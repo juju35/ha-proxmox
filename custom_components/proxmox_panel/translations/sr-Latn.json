@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Dodaje Proxmox panel na bočnu traku: čvorove, virtuelne mašine, kontejnere, skladišta i rezervne kopije integracije Proxmox VE."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel je već podešen."
+    }
+  }
+}

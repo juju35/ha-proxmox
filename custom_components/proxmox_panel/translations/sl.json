@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Doda ploščo Proxmox v stransko vrstico: vozlišča, navidezne računalnike, vsebnike, shrambe in varnostne kopije integracije Proxmox VE."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel je že nastavljen."
+    }
+  }
+}

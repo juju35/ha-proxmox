@@ -1,0 +1,31 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+  # devDependencies (Playwright, used by scripts/screenshots.mjs). The Screenshots workflow installs
+  # the browser with the Playwright from the lock (npm ci, then npx playwright), so a bump stays aligned.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        patterns: ["*"]
+  # Hooks of .pre-commit-config.yaml. Biome stays pinned by hand: its version must move together in the
+  # hook's rev, its additional_dependencies and biome.json ($schema), so Dependabot leaves it alone.
+  # The Lint workflow reads it from the hook and fails when the three disagree.
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: monthly
+    ignore:
+      - dependency-name: "*biomejs*"
+    groups:
+      pre-commit-hooks:
+        patterns: ["*"]

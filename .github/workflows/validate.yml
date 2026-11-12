@@ -1,0 +1,98 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+  # Called by Release, so that a version is published only once these checks pass.
+  workflow_call:
+
+permissions:
+  contents: read
+
+# github.workflow is "Release" when called from Release: the group then stays distinct from this
+# workflow's own push run on main, so neither cancels the other. The event too: the checks the screenshot commit
+# dispatches on a pull request's branch have their own group, so a dispatched run stuck on GitHub's side (queued
+# with no job, impossible to cancel) cannot hold the pull request's own runs, nor theirs.
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  version:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The checks the release makes, before merging: a version bumped in one file only fails the release on main.
+      - name: Same version everywhere, and in the changelog
+        run: |
+          VERSION="$(jq -r .version custom_components/proxmox_panel/manifest.json)"
+          grep -q "VERSION = \"$VERSION\"" custom_components/proxmox_panel/const.py || { echo "::error file=custom_components/proxmox_panel/const.py::version $VERSION not found in custom_components/proxmox_panel/const.py"; exit 1; }
+          grep -q "PROXMOX_PANEL_VERSION = \"$VERSION\"" custom_components/proxmox_panel/frontend/proxmox-panel.js || { echo "::error file=custom_components/proxmox_panel/frontend/proxmox-panel.js::version $VERSION not found in custom_components/proxmox_panel/frontend/proxmox-panel.js"; exit 1; }
+          grep -q "\"version\": \"$VERSION\"" package.json || { echo "::error file=package.json::version $VERSION not found in package.json"; exit 1; }
+          test "$(node -p "require('./package-lock.json').version")" = "$VERSION" || { echo "::error file=package-lock.json::package-lock.json is not at $VERSION (npm install)"; exit 1; }
+          grep -q "^## $VERSION " CHANGELOG.md || { echo "::error file=CHANGELOG.md::no '## $VERSION' entry in CHANGELOG.md"; exit 1; }
+          echo "Version $VERSION everywhere"
+
+  hassfest:
+    name: Hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Hassfest validation
+        uses: home-assistant/actions/hassfest@86d4564712fa02543c808e3a693dd04f9d3f8361 # master
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Latest Home Assistant: releases since 2026.3 need Python 3.14 (3.13 would resolve to 2026.2).
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: pip install -r requirements_test.txt
+
+      - name: Home Assistant version
+        run: python -c 'from homeassistant.const import __version__; print(f"::notice::Home Assistant {__version__}")'
+
+      - name: Run tests
+        run: pytest
+        env:
+          DEPRECATIONS_LOG: ${{ runner.temp }}/deprecations.log
+
+      - name: Annotate deprecated calls
+        if: failure()
+        run: |
+          if [ -f "$RUNNER_TEMP/deprecations.log" ]; then
+            sort -u "$RUNNER_TEMP/deprecations.log" | head -n 20 | while IFS= read -r line; do echo "::error::$line"; done
+          fi
+
+  panel-tests:
+    name: Panel tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: Run panel tests
+        run: node --test test/*.test.mjs

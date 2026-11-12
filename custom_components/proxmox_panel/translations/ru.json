@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Добавляет панель Proxmox на боковую панель: узлы, виртуальные машины, контейнеры, хранилища и резервные копии интеграции Proxmox VE."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel уже настроен."
+    }
+  }
+}

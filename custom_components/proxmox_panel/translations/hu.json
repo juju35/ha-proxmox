@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Hozzáadja a Proxmox panelt az oldalsávhoz: a Proxmox VE integráció csomópontjai, virtuális gépei, konténerei, tárolói és mentései."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "A Proxmox Panel már be van állítva."
+    }
+  }
+}

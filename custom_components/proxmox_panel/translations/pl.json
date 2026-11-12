@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Dodaje panel Proxmox do paska bocznego: węzły, maszyny wirtualne, kontenery, magazyny i kopie zapasowe integracji Proxmox VE."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel jest już skonfigurowany."
+    }
+  }
+}

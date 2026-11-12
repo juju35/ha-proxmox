@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Añade el panel Proxmox a la barra lateral: los nodos, máquinas virtuales, contenedores, almacenamiento y copias de seguridad de la integración Proxmox VE."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel ya está configurado."
+    }
+  }
+}

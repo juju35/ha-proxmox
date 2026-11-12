@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Добавя панела Proxmox в страничната лента: възлите, виртуалните машини, контейнерите, хранилищата и резервните копия на интеграцията Proxmox VE."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel вече е настроен."
+    }
+  }
+}

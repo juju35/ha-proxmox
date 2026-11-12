@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Lägger till Proxmox-panelen i sidofältet: noder, virtuella maskiner, containrar, lagring och säkerhetskopior från Proxmox VE-integrationen."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel är redan konfigurerad."
+    }
+  }
+}

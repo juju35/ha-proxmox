@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Προσθέτει τον πίνακα Proxmox στην πλαϊνή γραμμή: τους κόμβους, τις εικονικές μηχανές, τα κοντέινερ, την αποθήκευση και τα αντίγραφα ασφαλείας της ενσωμάτωσης Proxmox VE."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Το Proxmox Panel έχει ήδη ρυθμιστεί."
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Fügt der Seitenleiste das Proxmox-Panel hinzu: Knoten, virtuelle Maschinen, Container, Speicher und Backups der Proxmox-VE-Integration."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel ist bereits eingerichtet."
+    }
+  }
+}

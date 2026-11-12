@@ -1,0 +1,15 @@
+{
+  "domain": "proxmox_panel",
+  "name": "Proxmox Panel",
+  "after_dependencies": ["proxmoxve"],
+  "codeowners": ["@juju35"],
+  "config_flow": true,
+  "dependencies": ["frontend", "http", "panel_custom"],
+  "documentation": "https://github.com/juju35/ha-proxmox",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/juju35/ha-proxmox/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

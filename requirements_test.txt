@@ -1,0 +1,3 @@
+pytest-homeassistant-custom-component
+# Requirement of the core Proxmox VE integration, whose entry the tests add and unload
+proxmoxer

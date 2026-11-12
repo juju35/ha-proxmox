@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Pievieno Proxmox paneli sānjoslai: Proxmox VE integrācijas mezglus, virtuālās mašīnas, konteinerus, krātuves un rezerves kopijas."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel jau ir iestatīts."
+    }
+  }
+}

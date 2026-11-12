@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Adaugă panoul Proxmox în bara laterală: nodurile, mașinile virtuale, containerele, stocarea și copiile de rezervă ale integrării Proxmox VE."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel este deja configurat."
+    }
+  }
+}

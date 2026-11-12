@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Přidá panel Proxmox do postranního panelu: uzly, virtuální počítače, kontejnery, úložiště a zálohy integrace Proxmox VE."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel je již nastaven."
+    }
+  }
+}

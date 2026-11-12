@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Proxmox Panel",
+        "description": "Adds the Proxmox panel to the sidebar: the nodes, virtual machines, containers, storage and backups of the Proxmox VE integration."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Proxmox Panel is already set up."
+    }
+  }
+}
