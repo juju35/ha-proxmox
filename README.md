@@ -23,7 +23,8 @@ Home Assistant integration that adds a **Proxmox** panel to the sidebar, on top 
 - **Storage**: one gauge per storage (green, amber from 75 %, red from 90 %), with used, free and total space, and its active and shared state
 - **Backups**: the last backup of each node, how long it took and whether it failed, and a manual **Snapshot** of each virtual machine and container
 - **Confirmation** before the actions that stop or restart something (stop, shut down, reset, restart, hibernate, node-wide actions), at the top of the list
-- **Settings** (administrators): stopped machines shown or not, the confirmation, the panel kept for administrators or opened to everyone (the Settings tab stays for administrators), inactive storage hidden
+- **Settings**: stopped machines shown or not, the confirmation, inactive storage hidden
+- **Administrators only**: the panel and its commands are kept for administrators
 - The **Proxmox logo** as the sidebar icon
 - Light and dark themes, phones and desktops, 22 languages
 - No connection to Proxmox of its own: the panel reads the entities of the Proxmox VE integration and presses its buttons, with the permissions you gave it
@@ -66,7 +67,7 @@ Then **Settings → Devices & services → Add integration → Proxmox Panel**: 
 
 ## Panel
 
-The **Proxmox** entry of the sidebar, at `/proxmox` (each tab has its own address: `/proxmox/vms`, `/proxmox/containers`, `/proxmox/storage`, `/proxmox/backups`, `/proxmox/settings`). It is kept for administrators unless the settings open it to everyone.
+The **Proxmox** entry of the sidebar, at `/proxmox` (each tab has its own address: `/proxmox/vms`, `/proxmox/containers`, `/proxmox/storage`, `/proxmox/backups`, `/proxmox/settings`). It is for administrators only: other users do not see it in the sidebar, and its commands refuse them.
 
 | Light | Dark |
 |---|---|
@@ -84,7 +85,6 @@ The **Proxmox** entry of the sidebar, at `/proxmox` (each tab has its own addres
 |---|---|---|
 | Show stopped machines | on | Off: the VMs and Containers tabs list the running and suspended machines only, and say how many are hidden |
 | Ask before stopping or restarting | on | Stop, shut down, reset, restart, hibernate and the node-wide actions wait for a confirmation |
-| Keep the panel for administrators | on | Off: every user sees the panel and can use its actions; the Settings tab stays for administrators |
 | Hide inactive storage | off | Storage that is disabled or not active is left out of the Storage tab |
 
 ## How it works

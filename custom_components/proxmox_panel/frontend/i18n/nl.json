@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "In de tabbladen VM’s en Containers.",
   "s_confirm": "Vragen voor stoppen of herstarten",
   "s_confirm_hint": "Stoppen, afsluiten, resetten, herstarten, slaapstand en acties voor de hele node.",
-  "s_admin": "Paneel voorbehouden aan beheerders",
-  "s_admin_hint": "Uit: iedereen ziet het paneel; het tabblad Instellingen blijft voor beheerders.",
   "s_hide_storage": "Inactieve opslag verbergen",
   "s_hide_storage_hint": "Uitgeschakelde of niet-actieve opslag.",
   "save": "Opslaan",

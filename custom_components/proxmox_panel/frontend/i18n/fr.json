@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "Dans les onglets VM et Conteneurs.",
   "s_confirm": "Confirmer avant d’arrêter ou de redémarrer",
   "s_confirm_hint": "Arrêt, extinction, réinitialisation, redémarrage, hibernation et actions sur tout le nœud.",
-  "s_admin": "Réserver le panneau aux administrateurs",
-  "s_admin_hint": "Désactivé : tout le monde voit le panneau ; l’onglet Réglages reste réservé aux administrateurs.",
   "s_hide_storage": "Masquer le stockage inactif",
   "s_hide_storage_hint": "Les stockages désactivés ou inactifs.",
   "save": "Enregistrer",

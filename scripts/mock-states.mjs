@@ -125,7 +125,6 @@ export const inventory = {
   configured: true,
   entries: [{ entry_id: "e1", title: "192.168.1.10", state: "loaded", loaded: true }],
   ...items,
-  settings: { show_stopped: true, confirm_actions: true, admin_only: true, hide_inactive_storage: false },
-  admin: true,
+  settings: { show_stopped: true, confirm_actions: true, hide_inactive_storage: false },
 };
 export { history, states };

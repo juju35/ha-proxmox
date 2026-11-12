@@ -45,38 +45,35 @@ async def test_inventory_command(hass: HomeAssistant, hass_ws_client):
     assert res["success"]
     assert res["result"]["configured"] is False
     assert res["result"]["settings"] == DEFAULTS
-    assert res["result"]["admin"] is True
 
 
-async def test_inventory_kept_for_administrators(hass: HomeAssistant, hass_ws_client, hass_admin_user):
-    entry = await _setup(hass)
+async def test_administrators_only(hass: HomeAssistant, hass_ws_client, hass_admin_user):
+    # An option of 0.1.0 opened the panel to everyone: it is no longer read
+    await _setup(hass, options={**DEFAULTS, "admin_only": False})
+    assert hass.data["frontend_panels"][PANEL_PATH].require_admin is True
     hass_admin_user.groups = []  # no longer an administrator
     client = await hass_ws_client(hass)
-    await client.send_json_auto_id({"type": f"{DOMAIN}/inventory"})
-    res = await client.receive_json()
-    assert not res["success"] and res["error"]["code"] == "unauthorized"
-
-    hass.config_entries.async_update_entry(entry, options={**DEFAULTS, "admin_only": False})
-    await hass.async_block_till_done()
-    await client.send_json_auto_id({"type": f"{DOMAIN}/inventory"})
-    res = await client.receive_json()
-    assert res["success"] and res["result"]["admin"] is False
+    for command in ("inventory", "settings", "update_settings"):
+        await client.send_json_auto_id({"type": f"{DOMAIN}/{command}"})
+        res = await client.receive_json()
+        assert not res["success"] and res["error"]["code"] == "unauthorized", command
 
 
-async def test_update_settings_registers_the_panel_again(hass: HomeAssistant, hass_ws_client):
-    entry = await _setup(hass)
+async def test_update_settings(hass: HomeAssistant, hass_ws_client):
+    entry = await _setup(hass, options={**DEFAULTS, "admin_only": False})
     client = await hass_ws_client(hass)
-    await client.send_json_auto_id({"type": f"{DOMAIN}/update_settings", "admin_only": False, "show_stopped": False})
+    await client.send_json_auto_id({"type": f"{DOMAIN}/update_settings", "show_stopped": False})
     res = await client.receive_json()
     assert res["success"] and res["result"]["ok"]
     await hass.async_block_till_done()
-    assert entry.options["admin_only"] is False and entry.options["show_stopped"] is False
-    assert hass.data["frontend_panels"][PANEL_PATH].require_admin is False
+    assert dict(entry.options) == {**DEFAULTS, "show_stopped": False}
+    assert hass.data["frontend_panels"][PANEL_PATH].require_admin is True
 
     await client.send_json_auto_id({"type": f"{DOMAIN}/settings"})
     res = await client.receive_json()
-    assert res["result"]["settings"]["show_stopped"] is False
+    assert res["result"]["settings"] == {**DEFAULTS, "show_stopped": False}
 
-    await client.send_json_auto_id({"type": f"{DOMAIN}/update_settings", "unknown": True})
-    res = await client.receive_json()
-    assert not res["success"]
+    for bad in ({"admin_only": False}, {"unknown": True}):
+        await client.send_json_auto_id({"type": f"{DOMAIN}/update_settings", **bad})
+        res = await client.receive_json()
+        assert not res["success"], bad

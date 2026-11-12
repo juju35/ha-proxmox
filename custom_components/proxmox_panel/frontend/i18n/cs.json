@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "Na kartách VM a Kontejnery.",
   "s_confirm": "Ptát se před zastavením nebo restartem",
   "s_confirm_hint": "Zastavení, vypnutí, reset, restart, hibernace a akce pro celý uzel.",
-  "s_admin": "Vyhradit panel správcům",
-  "s_admin_hint": "Vypnuto: panel vidí všichni; karta Nastavení zůstává správcům.",
   "s_hide_storage": "Skrýt neaktivní úložiště",
   "s_hide_storage_hint": "Úložiště vypnutá nebo neaktivní.",
   "save": "Uložit",

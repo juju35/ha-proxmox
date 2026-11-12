@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "Na kartach VM i Kontenery.",
   "s_confirm": "Pytaj przed zatrzymaniem lub ponownym uruchomieniem",
   "s_confirm_hint": "Zatrzymanie, wyłączenie, reset, ponowne uruchomienie, hibernacja i akcje dla całego węzła.",
-  "s_admin": "Zarezerwuj panel dla administratorów",
-  "s_admin_hint": "Wyłączone: wszyscy widzą panel; karta Ustawienia pozostaje dla administratorów.",
   "s_hide_storage": "Ukryj nieaktywny magazyn",
   "s_hide_storage_hint": "Magazyn wyłączony lub nieaktywny.",
   "save": "Zapisz",

@@ -196,13 +196,11 @@ test("backups: disabled sensors lead to the node's device", () => {
 
 test("no Proxmox VE: the panel offers to add it; not allowed: says so", () => {
   const p = panel();
-  p._inv = { configured: false, entries: [], node: [], vm: [], container: [], storage: [], admin: true };
+  p._inv = { configured: false, entries: [], node: [], vm: [], container: [], storage: [] };
   assert.match(p._introHtml("nodes"), /add-proxmox/);
   assert.equal(p._introHtml("settings"), null);
   p._inv = { denied: true };
   assert.match(p._introHtml("nodes"), /kept for administrators/);
-  p._inv = { configured: true, admin: false };
-  assert.ok(!p._tabs().includes("settings"));
 });
 
 test("names are escaped", () => {

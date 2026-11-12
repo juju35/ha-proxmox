@@ -79,8 +79,6 @@
   "s_show_stopped_hint": "Cilnēs VM un Konteineri.",
   "s_confirm": "Jautāt pirms apturēšanas vai restartēšanas",
   "s_confirm_hint": "Apturēšana, izslēgšana, atiestatīšana, restartēšana, hibernācija un visa mezgla darbības.",
-  "s_admin": "Panelis tikai administratoriem",
-  "s_admin_hint": "Izslēgts: paneli redz visi; cilne Iestatījumi paliek administratoriem.",
   "s_hide_storage": "Paslēpt neaktīvās krātuves",
   "s_hide_storage_hint": "Atspējotas vai neaktīvas krātuves.",
   "save": "Saglabāt",
