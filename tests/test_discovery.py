@@ -16,7 +16,7 @@ def _device(hass, entry, identifier, name, via=None):
         config_entry_id=entry.entry_id,
         identifiers={(PROXMOX, f"{entry.entry_id}_{identifier}")},
         name=name,
-        via_device=(PROXMOX, f"{entry.entry_id}_{via}") if via else None,
+        via_device_id=via.id if via else None,
         configuration_url="https://192.168.1.10:8006/",
     )
 
@@ -70,16 +70,16 @@ async def test_inventory(hass: HomeAssistant):
     ):
         _entity(hass, entry, node, domain, unique)
     _entity(hass, entry, node, "sensor", "node/pve1_node_backup_last_backup", disabled=True)
-    vm101 = _device(hass, entry, "vm_101", "win11", via="node_node/pve1")
-    vm100 = _device(hass, entry, "vm_100", "homeassistant", via="node_node/pve1")
+    vm101 = _device(hass, entry, "vm_101", "win11", via=node)
+    vm100 = _device(hass, entry, "vm_100", "homeassistant", via=node)
     for unique in ("100_vm_cpu", "100_vm_status"):
         _entity(hass, entry, vm100, "sensor", unique)
     _entity(hass, entry, vm100, "binary_sensor", "100_status")
     _entity(hass, entry, vm100, "button", "100_shutdown")
     _entity(hass, entry, vm101, "button", "101_start")
-    ct = _device(hass, entry, "container_200", "nginx", via="node_node/pve1")
+    ct = _device(hass, entry, "container_200", "nginx", via=node)
     _entity(hass, entry, ct, "button", "200_restart")
-    storage = _device(hass, entry, "storage_local-lvm", "Storage (local-lvm)", via="node_node/pve1")
+    storage = _device(hass, entry, "storage_local-lvm", "Storage (local-lvm)", via=node)
     _entity(hass, entry, storage, "sensor", "pve1_local-lvm_storage_used_percentage")
     _entity(hass, entry, storage, "binary_sensor", "pve1_local-lvm_storage_active")
     # A device of another integration on the same entry is left out
