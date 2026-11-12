@@ -12,13 +12,15 @@ PROXMOX = "proxmoxve"
 
 
 def _device(hass, entry, identifier, name, via=None):
-    return dr.async_get(hass).async_get_or_create(
+    registry = dr.async_get(hass)
+    device = registry.async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={(PROXMOX, f"{entry.entry_id}_{identifier}")},
         name=name,
-        via_device_id=via.id if via else None,
         configuration_url="https://192.168.1.10:8006/",
     )
+    # The node it belongs to (async_get_or_create only takes via_device_id since Home Assistant 2026.10)
+    return registry.async_update_device(device.id, via_device_id=via.id) if via else device
 
 
 def _entity(hass, entry, device, domain, unique, disabled=False):
