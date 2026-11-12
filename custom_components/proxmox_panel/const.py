@@ -1,7 +1,7 @@
 """Constants for the Proxmox Panel integration."""
 
 DOMAIN = "proxmox_panel"
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 # The core Proxmox VE integration, whose devices and entities the panel shows
 PROXMOX_DOMAIN = "proxmoxve"
@@ -10,6 +10,9 @@ PROXMOX_DOMAIN = "proxmoxve"
 # so the frontend's panel route never shadows the files)
 URL_BASE = f"/{DOMAIN}"
 PANEL_URL = f"{URL_BASE}/proxmox-panel.js"
+# Lovelace cards (a dashboard resource), and the module the panel and the cards share (no long-term caching)
+CARDS_URL = f"{URL_BASE}/proxmox-cards.js"
+COMMON_URL = f"{URL_BASE}/proxmox-common.js"
 I18N_URL = f"{URL_BASE}/i18n"
 PANEL_PATH = "proxmox"
 PANEL_TITLE = "Proxmox"

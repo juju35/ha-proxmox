@@ -4,11 +4,20 @@ from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.proxmox_panel.const import DEFAULTS, DOMAIN, PANEL_ICON, PANEL_PATH
+from custom_components.proxmox_panel.const import (
+    CARDS_URL,
+    COMMON_URL,
+    DEFAULTS,
+    DOMAIN,
+    PANEL_ICON,
+    PANEL_PATH,
+    VERSION,
+)
 
 
 async def _setup(hass: HomeAssistant, options=None) -> MockConfigEntry:
     assert await async_setup_component(hass, "http", {})
+    assert await async_setup_component(hass, "lovelace", {})
     entry = MockConfigEntry(domain=DOMAIN, title="Proxmox Panel", data={}, options=options or dict(DEFAULTS))
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
@@ -77,3 +86,38 @@ async def test_update_settings(hass: HomeAssistant, hass_ws_client):
         await client.send_json_auto_id({"type": f"{DOMAIN}/update_settings", **bad})
         res = await client.receive_json()
         assert not res["success"], bad
+
+
+async def test_cards_command_for_every_user(hass: HomeAssistant, hass_ws_client, hass_admin_user):
+    await _setup(hass, options={**DEFAULTS, "confirm_actions": False})
+    hass_admin_user.groups = []  # not an administrator: the cards still read the inventory
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/cards"})
+    res = await client.receive_json()
+    assert res["success"]
+    assert res["result"]["configured"] is False
+    assert res["result"]["confirm_actions"] is False
+    assert "settings" not in res["result"]
+
+
+async def test_cards_resource_and_files(hass: HomeAssistant, hass_client):
+    entry = await _setup(hass)
+    resources = hass.data["lovelace"].resources
+    await resources.async_get_info()
+    assert [item["url"] for item in resources.async_items()] == [f"{CARDS_URL}?v={VERSION}"]
+    client = await hass_client()
+    for url, marker in ((CARDS_URL, f'PROXMOX_CARDS_VERSION = "{VERSION}"'), (COMMON_URL, "export const proxmoxRing")):
+        resp = await client.get(url)
+        assert resp.status == 200
+        assert marker in await resp.text()
+    # An older version is replaced, a duplicate removed
+    first = resources.async_items()[0]["id"]
+    await resources.async_update_item(first, {"res_type": "module", "url": f"{CARDS_URL}?v=0.0.1"})
+    await resources.async_create_item({"res_type": "module", "url": f"{CARDS_URL}?v=0.0.2"})
+    hass.data["proxmox_panel_cards_loaded"] = False
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert [item["url"] for item in resources.async_items()] == [f"{CARDS_URL}?v={VERSION}"]
+    # Removed with the entry
+    await hass.config_entries.async_remove(entry.entry_id)
+    assert not list(resources.async_items())

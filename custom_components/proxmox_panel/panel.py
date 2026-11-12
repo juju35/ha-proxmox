@@ -4,9 +4,11 @@ The panel (``frontend/proxmox-panel.js``) has six tabs: Nodes, Virtual machines,
 Settings. It reads the states of the Proxmox VE entities and acts by pressing their buttons, so it only needs:
 
 - ``proxmox_panel/inventory``: the nodes, virtual machines, containers and storages with their entity ids;
-- ``proxmox_panel/settings`` / ``proxmox_panel/update_settings``: the settings (options of the entry).
+- ``proxmox_panel/settings`` / ``proxmox_panel/update_settings``: the settings (options of the entry);
+- ``proxmox_panel/cards``: what the Lovelace cards need (the inventory and whether actions are confirmed).
 
-The panel and its commands are for administrators only.
+The panel and its commands are for administrators only; the cards' command answers every user, as the cards show
+values every user can read in the states anyway (their actions are offered to administrators only).
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 
 from .const import (
+    CONF_CONFIRM_ACTIONS,
     DEFAULTS,
     DOMAIN,
     PANEL_ICON,
@@ -58,7 +61,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
 @callback
 def async_register_commands(hass: HomeAssistant) -> None:
     """The panel's WebSocket commands."""
-    for command in (_ws_inventory, _ws_settings, _ws_update_settings):
+    for command in (_ws_inventory, _ws_cards, _ws_settings, _ws_update_settings):
         websocket_api.async_register_command(hass, command)
 
 
@@ -67,6 +70,15 @@ def async_register_commands(hass: HomeAssistant) -> None:
 @callback
 def _ws_inventory(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict) -> None:
     connection.send_result(msg["id"], {**async_inventory(hass).as_dict(), "settings": settings(_entry(hass))})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/cards"})
+@callback
+def _ws_cards(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict) -> None:
+    current = settings(_entry(hass))
+    connection.send_result(
+        msg["id"], {**async_inventory(hass).as_dict(), "confirm_actions": current[CONF_CONFIRM_ACTIONS]}
+    )
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/settings"})
