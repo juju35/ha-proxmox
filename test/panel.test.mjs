@@ -2,53 +2,16 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
-import vm from "node:vm";
+import { common, panel as panelModule } from "./load.mjs";
 import { inventory, states } from "../scripts/mock-states.mjs";
 
-const load = () => {
-  const src = readFileSync(new URL("../custom_components/proxmox_panel/frontend/proxmox-panel.js", import.meta.url), "utf8");
-  const defined = new Map();
-  const context = {
-    HTMLElement: class {
-      attachShadow() {
-        this.shadowRoot = { innerHTML: "", querySelector: () => null, querySelectorAll: () => [], getElementById: () => null };
-        return this.shadowRoot;
-      }
-      dispatchEvent(ev) {
-        (this.events ||= []).push(ev);
-      }
-    },
-    customElements: { get: (n) => defined.get(n), define: (n, c) => defined.set(n, c) },
-    console: { error() {} },
-    setTimeout: () => 0,
-    clearTimeout() {},
-    setInterval: () => 0,
-    clearInterval() {},
-    history: { replaceState() {}, pushState() {} },
-    window: { dispatchEvent() {} },
-    CustomEvent: class {
-      constructor(type, init) {
-        this.type = type;
-        this.detail = init?.detail;
-      }
-    },
-    Intl,
-    Date,
-  };
-  vm.createContext(context);
-  return vm.runInContext(
-    `${src}\n;({ PROXMOX_PANEL_EN, PROXMOX_PANEL_LANGS, ProxmoxPanel, proxmoxPanelBytes, proxmoxPanelDuration, proxmoxPanelEsc })`,
-    context,
-  );
-};
-
-const lib = load();
+const lib = { ...common, ...panelModule };
 const i18n = new URL("../custom_components/proxmox_panel/frontend/i18n/", import.meta.url);
 const placeholders = (s) => (String(s).match(/\{\w+\}/g) || []).sort();
 
 test("every language file has one string per English key, with its placeholders", () => {
   const files = readdirSync(i18n).map((f) => f.replace(/\.json$/, ""));
-  assert.deepEqual([...files].sort(), [...lib.PROXMOX_PANEL_LANGS.filter((l) => l !== "en")].sort());
+  assert.deepEqual([...files].sort(), lib.PROXMOX_PANEL_LANGS.filter((l) => l !== "en").sort());
   for (const lang of files) {
     const strings = JSON.parse(readFileSync(new URL(`${lang}.json`, i18n), "utf8"));
     assert.deepEqual(Object.keys(strings).sort(), Object.keys(lib.PROXMOX_PANEL_EN).sort(), lang);
@@ -170,7 +133,7 @@ test("nodes: rings, guests running and the update", () => {
   const html = panel()._nodesHtml();
   assert.match(html, /23 %/);
   assert.match(html, /62 %/);
-  assert.match(html, /RAM · 19.8 GiB \/ 31.9 GiB/);
+  assert.match(html, /RAM<small>19.8 GiB \/ 31.9 GiB<\/small>/);
   assert.match(html, /VMs running: 2\/4/);
   assert.match(html, /Containers running: 5\/6/);
   assert.match(html, /Update available/);

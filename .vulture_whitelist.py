@@ -11,3 +11,4 @@ configured  # unused variable (custom_components/proxmox_panel/discovery.py): In
 vm  # unused variable (custom_components/proxmox_panel/discovery.py): Inventory field, filled through getattr
 container  # unused variable (custom_components/proxmox_panel/discovery.py): Inventory field, filled through getattr
 storage  # unused variable (custom_components/proxmox_panel/discovery.py): Inventory field, filled through getattr
+async_remove_entry  # unused function (custom_components/proxmox_panel/__init__.py)
