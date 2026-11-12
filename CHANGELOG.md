@@ -1,6 +1,8 @@
 # Changelog
 
-## 0.3.0 - 2026-11-13
+## 1.0.0 - 2026-11-13
+
+First stable release.
 
 ### Features
 - **Cards** for the dashboards, added to the resources by the integration, with a visual editor and 22 languages:

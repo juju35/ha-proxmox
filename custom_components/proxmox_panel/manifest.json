@@ -11,5 +11,5 @@
   "issue_tracker": "https://github.com/juju35/ha-proxmox/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.3.0"
+  "version": "1.0.0"
 }
