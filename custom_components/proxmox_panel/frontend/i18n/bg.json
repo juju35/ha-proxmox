@@ -107,6 +107,8 @@
   "e_show_subtitle": "Подзаглавие",
   "e_zoom": "Бутон към цялата карта",
   "e_max_items": "Машини в списък",
+  "e_title": "Собствено заглавие",
+  "e_collapsed": "Свити раздели",
   "e_language": "Език",
   "e_lang_auto": "Както в Home Assistant"
 }

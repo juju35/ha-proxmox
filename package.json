@@ -1,6 +1,6 @@
 {
   "name": "ha-proxmox",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Home Assistant sidebar panel for the Proxmox VE integration: nodes, virtual machines, containers, storage and backups.",
   "private": true,
   "type": "module",

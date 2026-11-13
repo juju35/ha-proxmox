@@ -107,6 +107,8 @@
   "e_show_subtitle": "Υπότιτλος",
   "e_zoom": "Κουμπί προς την πλήρη κάρτα",
   "e_max_items": "Μηχανές ανά λίστα",
+  "e_title": "Προσαρμοσμένος τίτλος",
+  "e_collapsed": "Συμπτυγμένες ενότητες",
   "e_language": "Γλώσσα",
   "e_lang_auto": "Όπως στο Home Assistant"
 }

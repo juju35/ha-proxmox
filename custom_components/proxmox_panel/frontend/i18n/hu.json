@@ -107,6 +107,8 @@
   "e_show_subtitle": "Alcím",
   "e_zoom": "Gomb a teljes kártyához",
   "e_max_items": "Gépek listánként",
+  "e_title": "Egyéni cím",
+  "e_collapsed": "Összecsukott szakaszok",
   "e_language": "Nyelv",
   "e_lang_auto": "Ahogy a Home Assistantban"
 }

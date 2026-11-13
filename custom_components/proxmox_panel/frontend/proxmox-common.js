@@ -127,6 +127,8 @@ export const PROXMOX_PANEL_EN = {
   e_show_subtitle: "Subtitle",
   e_zoom: "Button to the full card",
   e_max_items: "Machines shown per list",
+  e_title: "Custom title",
+  e_collapsed: "Sections folded",
   e_language: "Language",
   e_lang_auto: "As in Home Assistant",
 };
@@ -159,6 +161,10 @@ export const PROXMOX_PANEL_ICONS = {
   open: "M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z",
   backup: "M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3",
   download: "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z",
+  // The gauges of the cards, as System Hub's System Monitor card draws them
+  cpu: "M6,4H18V5H21V7H18V9H21V11H18V13H21V15H18V17H21V19H18V20H6V19H3V17H6V15H3V13H6V11H3V9H6V7H3V5H6V4M11,15V18H12V15H11M13,15V18H14V15H13M15,15V18H16V15H15Z",
+  ram: "M17,17H7V7H17M21,11V9H19V7C19,5.89 18.1,5 17,5H15V3H13V5H11V3H9V5H7C5.89,5 5,5.89 5,7V9H3V11H5V13H3V15H5V17A2,2 0 0,0 7,19H9V21H11V19H13V21H15V19H17A2,2 0 0,0 19,17V15H21V13H19V11M13,13H11V11H13M15,9H9V15H15V9Z",
+  disk: "M6,2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M12,4A6,6 0 0,0 6,10C6,13.31 8.69,16 12.1,16L11.22,13.77C10.95,13.29 11.11,12.68 11.59,12.4L12.45,11.9C12.93,11.63 13.54,11.79 13.82,12.27L15.74,14.69C17.12,13.59 18,11.9 18,10A6,6 0 0,0 12,4M12,9A1,1 0 0,1 13,10A1,1 0 0,1 12,11A1,1 0 0,1 11,10A1,1 0 0,1 12,9M7,18A1,1 0 0,0 6,19A1,1 0 0,0 7,20A1,1 0 0,0 8,19A1,1 0 0,0 7,18M12.09,13.27L14.58,19.58L17.17,18.08L12.95,12.77L12.09,13.27Z",
   upload: "M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z",
 };
 export const proxmoxPanelIcon = (name, cls = "i") =>
@@ -394,7 +400,7 @@ export const PROXMOX_SHARED_STYLE = `
 `;
 
 /** CSS variables of the panel and the cards. */
-export const PROXMOX_VARS = `--px-accent:#e57000; --tone-good:var(--success-color, #43a047); --tone-warn:var(--warning-color, #ffa600);
+export const PROXMOX_VARS = `--px-accent:#e57000; --px-blue:#18bcf2; --tone-good:var(--success-color, #43a047); --tone-warn:var(--warning-color, #ffa600);
   --tone-bad:var(--error-color, #db4437); --tone-down:#43a047; --tone-up:#1e88e5;`;
 
 /**

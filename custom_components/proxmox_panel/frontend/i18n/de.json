@@ -107,6 +107,8 @@
   "e_show_subtitle": "Untertitel",
   "e_zoom": "Schaltfläche zur vollständigen Karte",
   "e_max_items": "Maschinen pro Liste",
+  "e_title": "Eigener Titel",
+  "e_collapsed": "Abschnitte eingeklappt",
   "e_language": "Sprache",
   "e_lang_auto": "Wie in Home Assistant"
 }

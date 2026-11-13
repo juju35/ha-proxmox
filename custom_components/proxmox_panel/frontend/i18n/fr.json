@@ -107,6 +107,8 @@
   "e_show_subtitle": "Sous-titre",
   "e_zoom": "Bouton vers la carte complète",
   "e_max_items": "Machines affichées par liste",
+  "e_title": "Titre personnalisé",
+  "e_collapsed": "Sections repliées",
   "e_language": "Langue",
   "e_lang_auto": "Comme dans Home Assistant"
 }

@@ -107,6 +107,8 @@
   "e_show_subtitle": "Ondertitel",
   "e_zoom": "Knop naar de volledige kaart",
   "e_max_items": "Machines per lijst",
+  "e_title": "Eigen titel",
+  "e_collapsed": "Secties ingeklapt",
   "e_language": "Taal",
   "e_lang_auto": "Zoals in Home Assistant"
 }

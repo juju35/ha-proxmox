@@ -107,6 +107,8 @@
   "e_show_subtitle": "Undertitel",
   "e_zoom": "Knap til hele kortet",
   "e_max_items": "Maskiner pr. liste",
+  "e_title": "Egen titel",
+  "e_collapsed": "Sektioner foldet sammen",
   "e_language": "Sprog",
   "e_lang_auto": "Som i Home Assistant"
 }

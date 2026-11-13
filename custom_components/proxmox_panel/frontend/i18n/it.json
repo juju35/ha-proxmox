@@ -107,6 +107,8 @@
   "e_show_subtitle": "Sottotitolo",
   "e_zoom": "Pulsante verso la scheda completa",
   "e_max_items": "Macchine mostrate per elenco",
+  "e_title": "Titolo personalizzato",
+  "e_collapsed": "Sezioni chiuse",
   "e_language": "Lingua",
   "e_lang_auto": "Come in Home Assistant"
 }

@@ -107,6 +107,8 @@
   "e_show_subtitle": "Podtytuł",
   "e_zoom": "Przycisk do pełnej karty",
   "e_max_items": "Maszyny na liście",
+  "e_title": "Własny tytuł",
+  "e_collapsed": "Sekcje zwinięte",
   "e_language": "Język",
   "e_lang_auto": "Jak w Home Assistant"
 }
