@@ -107,6 +107,8 @@
   "e_show_subtitle": "Podnázev",
   "e_zoom": "Tlačítko na celou kartu",
   "e_max_items": "Počítače v seznamu",
+  "e_title": "Vlastní název",
+  "e_collapsed": "Sbalené sekce",
   "e_language": "Jazyk",
   "e_lang_auto": "Jako v Home Assistant"
 }

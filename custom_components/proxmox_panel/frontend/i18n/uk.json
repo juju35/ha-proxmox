@@ -107,6 +107,8 @@
   "e_show_subtitle": "Підзаголовок",
   "e_zoom": "Кнопка повної картки",
   "e_max_items": "Машин у списку",
+  "e_title": "Власний заголовок",
+  "e_collapsed": "Згорнуті розділи",
   "e_language": "Мова",
   "e_lang_auto": "Як у Home Assistant"
 }

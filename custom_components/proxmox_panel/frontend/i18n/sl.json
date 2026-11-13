@@ -107,6 +107,8 @@
   "e_show_subtitle": "Podnaslov",
   "e_zoom": "Gumb do celotne kartice",
   "e_max_items": "Računalniki na seznam",
+  "e_title": "Lasten naslov",
+  "e_collapsed": "Strnjeni razdelki",
   "e_language": "Jezik",
   "e_lang_auto": "Kot v Home Assistantu"
 }

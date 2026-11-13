@@ -14,7 +14,6 @@
  */
 
 import {
-  PROXMOX_COLORS,
   PROXMOX_PANEL_ACTIONS,
   PROXMOX_PANEL_CUTTING,
   PROXMOX_PANEL_FOR_STATUS,
@@ -34,7 +33,6 @@ import {
   proxmoxPanelIcon as icon,
   proxmoxPct,
   proxmoxReleasePress,
-  proxmoxRing,
   proxmoxState,
   proxmoxStatus,
   proxmoxStatusPill,
@@ -42,7 +40,7 @@ import {
   proxmoxUptime,
 } from "./proxmox-common.js";
 
-export const PROXMOX_CARDS_VERSION = "1.0.1";
+export const PROXMOX_CARDS_VERSION = "1.1.0";
 const LANGUAGE_NAMES = {
   en: "English", fr: "Français", de: "Deutsch", es: "Español", sr: "Српски", "sr-Latn": "Srpski (latinica)", it: "Italiano",
   nl: "Nederlands", pt: "Português", pl: "Polski", ro: "Română", da: "Dansk", sv: "Svenska", bg: "Български", ru: "Русский",
@@ -123,6 +121,25 @@ const findNode = (nodes, wanted) => {
   return nodes.find((n) => n.name.toLowerCase() === w || n.key.toLowerCase() === w || n.key.toLowerCase() === `node/${w}` || n.id === wanted);
 };
 
+// The thresholds of the gauges (orange, then red), those of System Hub's System Monitor card
+const GAUGE_LEVELS = { cpu: [70, 90], ram: [70, 90], disk: [80, 90] };
+const gaugeLevel = (metric, pct) => {
+  if (pct === null) return "muted";
+  const [warn, crit] = GAUGE_LEVELS[metric];
+  return pct >= crit ? "crit" : pct >= warn ? "warn" : "ok";
+};
+
+/** The last 24 hours of a percentage behind a whole gauge, 0 % at its bottom and 100 % at its top. */
+const gaugeCurve = (points) => {
+  const t0 = Date.now() - 86400000;
+  const recent = (points || []).filter(([t]) => t >= t0);
+  if (recent.length < 2) return "";
+  const y = (p) => (30 - (Math.max(0, Math.min(100, p)) / 100) * 28).toFixed(2);
+  const xy = recent.map(([t, p]) => `${(((t - t0) / 86400000) * 100).toFixed(2)},${y(p)}`);
+  const line = `M${xy.join("L")}L100,${y(recent[recent.length - 1][1])}`;
+  return `<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path class="spark-a" d="${line}L100,30L${xy[0].split(",")[0]},30Z"/><path class="spark-l" d="${line}"/></svg>`;
+};
+
 // ── Base card ──
 
 class ProxmoxBaseCard extends HTMLElement {
@@ -142,6 +159,34 @@ class ProxmoxBaseCard extends HTMLElement {
     .note.bad { color:color-mix(in srgb, var(--tone-bad) 50%, var(--primary-text-color)); }
     .note.good { color:color-mix(in srgb, var(--tone-good) 50%, var(--primary-text-color)); }
     .sec { font-size:12px; color:var(--secondary-text-color); display:flex; justify-content:space-between; gap:8px; margin-top:2px; }
+    button.sec { all:unset; box-sizing:border-box; display:flex; align-items:center; gap:6px; width:100%; cursor:pointer; padding:2px 0; margin-top:2px;
+                 font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:.04em; color:var(--secondary-text-color); }
+    button.sec:focus-visible { outline:2px solid var(--px-accent); outline-offset:2px; border-radius:4px; }
+    button.sec .i { width:18px; height:18px; }
+    button.sec .label { flex:0 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    button.sec .aside { flex:1; text-transform:none; letter-spacing:0; font-weight:400; white-space:nowrap; }
+    button.sec .chev { transition:transform .2s; }
+    button.sec.open .chev { transform:rotate(90deg); }
+    .sec-wrap { display:flex; flex-direction:column; gap:4px; }
+    .gauges { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; container-type:inline-size; }
+    .gauge { --c:var(--px-blue); position:relative; display:flex; flex-direction:column; align-items:center; min-width:0; border-radius:10px; overflow:hidden; padding:4px 0 6px; }
+    .gauge[data-action] { cursor:pointer; }
+    .gauge.warn { --c:var(--tone-warn); } .gauge.crit { --c:var(--tone-bad); } .gauge.muted { --c:var(--secondary-text-color); }
+    .gauge > :not(.spark) { position:relative; }
+    .gauge .spark { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+    .spark-a { fill:color-mix(in srgb, var(--c) 12%, transparent); }
+    .spark-l { fill:none; stroke:color-mix(in srgb, var(--c) 50%, transparent); stroke-width:1.2; vector-effect:non-scaling-stroke; }
+    .dial { position:relative; width:100%; max-width:60px; aspect-ratio:1; }
+    .gauge .ring { width:100%; height:100%; transform:rotate(-90deg); display:block; }
+    .gauge .ring circle { fill:none; stroke-width:6; }
+    .gauge .ring .track { stroke:var(--divider-color, rgba(127,127,127,.25)); }
+    .gauge .ring .value { stroke:var(--c); stroke-linecap:round; transition:stroke-dasharray .4s; }
+    .dial .val { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .dial .val b { font-size:14px; font-weight:500; }
+    .dial .val .i { width:12px; height:12px; color:var(--secondary-text-color); }
+    .gauge .lbl { font-size:12px; color:var(--secondary-text-color); text-align:center; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .gauge .lbl2 { font-size:11px; color:var(--secondary-text-color); text-align:center; }
+    @container (max-width: 300px) { .gauge .lbl { font-size:11px; } .gauge .lbl2 { font-size:10px; } }
     .list { display:flex; flex-direction:column; }
     .row { display:flex; align-items:center; gap:10px; padding:7px 0; border-top:1px solid var(--divider-color, rgba(127,127,127,.15)); min-height:34px; }
     .list > .row:first-child { border-top:0; }
@@ -150,16 +195,22 @@ class ProxmoxBaseCard extends HTMLElement {
     .row .t { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
     .name { all:unset; cursor:pointer; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .name .id { color:var(--secondary-text-color); }
-    .srow { display:flex; align-items:center; gap:10px; padding:4px 0; font-size:13px; }
-    .srow .k { width:30%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .srow .bar { flex:1; }
-    .srow .v { font-size:12px; color:var(--secondary-text-color); min-width:3em; text-align:right; }
+    .vols { display:flex; flex-direction:column; gap:8px; }
+    .vol { --c:var(--px-blue); display:flex; flex-direction:column; gap:4px; }
+    .vol.warn { --c:var(--tone-warn); } .vol.crit { --c:var(--tone-bad); }
+    .vol .line { display:flex; align-items:center; gap:8px; font-size:13px; min-width:0; }
+    .vol .line > .i { color:var(--secondary-text-color); }
+    .vol .k { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .vol .v { font-size:12px; color:var(--secondary-text-color); white-space:nowrap; }
+    .vol .bar { height:4px; }
+    .vol .bar > i { background:var(--c); }
     .bars { flex:1; min-width:0; display:grid; grid-template-columns:repeat(var(--cols, 3), minmax(0, 1fr)); gap:8px; }
     .bars .l { font-size:11px; color:var(--secondary-text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .bars .bar { height:5px; margin-top:2px; }
+    .bars > div { --c:var(--px-blue); } .bars > .warn { --c:var(--tone-warn); } .bars > .crit { --c:var(--tone-bad); }
+    .bars .bar > i { background:var(--c); }
     .block { display:flex; flex-direction:column; gap:12px; }
     .block + .block { border-top:1px solid var(--divider-color, rgba(127,127,127,.15)); padding-top:12px; }
-    @media (max-width: 420px) { .ring svg.r { width:68px; height:68px; } }
   `;
 
   constructor() {
@@ -284,6 +335,15 @@ class ProxmoxBaseCard extends HTMLElement {
     return out.join("");
   }
 
+  /** The header's title: `title` when the card shows a single node or machine, else the name of each. */
+  _titleFor(name) {
+    return this._config.title && !this._several() ? this._config.title : name;
+  }
+
+  _several() {
+    return false;
+  }
+
   _head(badge, title, subtitle, aside) {
     const t = this._config.show_title === false ? "" : `<span class="n">${esc(title)}</span>`;
     const s = this._config.show_subtitle === false || !subtitle ? "" : `<span class="s">${esc(subtitle)}</span>`;
@@ -327,19 +387,59 @@ class ProxmoxBaseCard extends HTMLElement {
     return a !== null && b ? (a / b) * 100 : null;
   }
 
+  /**
+   * CPU, RAM and disk as the other ha-* cards draw them (System Hub's System Monitor card, the NAS card): a ring with
+   * the metric's icon and its whole percentage, blue then orange then red from the thresholds, the 24 h curve behind
+   * the whole gauge on a 0-100 scale, the label and the used / total under it.
+   */
   _rings(e) {
-    return `<div class="rings">
-        ${proxmoxRing(this._t("cpu"), proxmoxNum(this._hass, e.cpu), PROXMOX_COLORS.cpu, "", this._history[e.cpu] || [])}
-        ${proxmoxRing(this._t("ram"), this._pctOf(e.memory_pct, e.memory, e.max_memory), PROXMOX_COLORS.ram, this._of(e.memory, e.max_memory), this._history[e.memory_pct] || [])}
-        ${proxmoxRing(this._t("disk"), this._pctOf(null, e.disk, e.max_disk), PROXMOX_COLORS.disk, this._of(e.disk, e.max_disk))}
-      </div>`;
+    const gauges = [
+      this._gauge("cpu", proxmoxNum(this._hass, e.cpu), "", this._history[e.cpu], e.cpu),
+      this._gauge("ram", this._pctOf(e.memory_pct, e.memory, e.max_memory), this._of(e.memory, e.max_memory), this._history[e.memory_pct], e.memory_pct || e.memory),
+      this._gauge("disk", this._pctOf(null, e.disk, e.max_disk), this._of(e.disk, e.max_disk), null, e.disk),
+    ];
+    return `<div class="gauges">${gauges.join("")}</div>`;
   }
 
+  _gauge(metric, pct, detail, points, entity) {
+    const v = pct === null ? 0 : Math.max(0, Math.min(100, pct));
+    const r = 26;
+    const c = 2 * Math.PI * r;
+    const label = this._t(metric);
+    const shown = pct === null ? "—" : `${Math.round(pct)}%`;
+    return `<div class="gauge ${gaugeLevel(metric, pct)}"${entity ? ` data-action="more-info" data-entity="${esc(entity)}" role="button" tabindex="0"` : ""}>${gaugeCurve(points)}
+      <div class="dial"><svg class="ring" viewBox="0 0 60 60" role="img" aria-label="${esc(`${label} ${shown}`)}"><circle class="track" cx="30" cy="30" r="${r}"/>
+        <circle class="value" cx="30" cy="30" r="${r}" stroke-dasharray="${((v / 100) * c).toFixed(1)} ${c.toFixed(1)}"/></svg>
+        <div class="val">${icon(metric)}<b>${shown}</b></div></div>
+      <div class="lbl" title="${esc(label)}">${esc(label)}</div>${detail ? `<div class="lbl2">${esc(detail)}</div>` : ""}</div>`;
+  }
+
+  /**
+   * A section of the node card (virtual machines, containers, storage): its icon, its name, what it counts, a
+   * chevron; a click folds or unfolds it. With `collapsed: true` the sections start folded and a click elsewhere on
+   * the page folds them again.
+   */
+  _section(key, iconName, label, aside, body) {
+    const open = !this._folded().has(key);
+    return `<div class="sec-wrap"><button class="sec${open ? " open" : ""}" data-action="fold" data-section="${esc(key)}" aria-expanded="${open}">
+        ${icon(iconName)}<span class="label" title="${esc(label)}">${esc(label)}</span>${aside ? `<span class="aside">${esc(aside)}</span>` : ""}${icon("chevron", "i chev")}</button>
+      ${open ? body : ""}</div>`;
+  }
+
+  /** The sections folded: every one with `collapsed: true` until it is opened, none otherwise until it is folded. */
+  _folded() {
+    if (!this._foldState || this._foldState.collapsed !== !!this._config.collapsed) {
+      this._foldState = { collapsed: !!this._config.collapsed, set: new Set(this._config.collapsed ? ["vm", "container", "storage"] : []) };
+    }
+    return this._foldState.set;
+  }
+
+  /** The mini card's bars, in the colours of its gauges (blue, then orange, then red from the thresholds). */
   _miniBars(e) {
-    const bar = (label, pct, color) =>
-      `<div><div class="l">${esc(label)} ${proxmoxPct(pct)}</div><div class="bar"><i style="width:${pct === null ? 0 : Math.max(0, Math.min(100, pct)).toFixed(1)}%;background:${color}"></i></div></div>`;
-    const bars = [bar(this._t("cpu"), proxmoxNum(this._hass, e.cpu), PROXMOX_COLORS.cpu), bar(this._t("ram"), this._pctOf(e.memory_pct, e.memory, e.max_memory), PROXMOX_COLORS.ram)];
-    if (e.disk || e.max_disk) bars.push(bar(this._t("disk"), this._pctOf(null, e.disk, e.max_disk), PROXMOX_COLORS.disk));
+    const bar = (metric, pct) =>
+      `<div class="${gaugeLevel(metric, pct)}"><div class="l">${esc(this._t(metric))} ${pct === null ? "—" : `${Math.round(pct)}%`}</div><div class="bar"><i style="width:${pct === null ? 0 : Math.max(0, Math.min(100, pct)).toFixed(1)}%"></i></div></div>`;
+    const bars = [bar("cpu", proxmoxNum(this._hass, e.cpu)), bar("ram", this._pctOf(e.memory_pct, e.memory, e.max_memory))];
+    if (e.disk || e.max_disk) bars.push(bar("disk", this._pctOf(null, e.disk, e.max_disk)));
     return `<div class="bars" style="--cols:${bars.length}">${bars.join("")}</div>`;
   }
 
@@ -475,6 +575,48 @@ export class ProxmoxCard extends ProxmoxBaseCard {
     return {};
   }
 
+  constructor() {
+    super();
+    // `collapsed: true`: a click elsewhere on the page folds the sections opened (as in ha-carburants-france)
+    this._onOutsideFold = (ev) => {
+      if (!this._config?.collapsed || ev.composedPath().includes(this) || inDialog(ev)) return;
+      const set = this._folded();
+      if (set.size === 3) return;
+      for (const k of ["vm", "container", "storage"]) set.add(k);
+      this._update(true);
+    };
+  }
+
+  connectedCallback() {
+    super.connectedCallback?.();
+    this._foldWatch ??= watchOutside(this, this._onOutsideFold);
+    this._foldWatch.on();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback?.();
+    this._foldWatch?.off();
+    // Left (another dashboard view): the sections come back as configured
+    this._foldState = null;
+  }
+
+  _several() {
+    return this._nodes().length > 1;
+  }
+
+  _action(action, data, ev) {
+    if (action === "fold") {
+      ev?.stopPropagation?.();
+      const set = this._folded();
+      if (set.has(data.section)) set.delete(data.section);
+      else set.add(data.section);
+      this._update(true);
+      this.dispatchEvent(new Event("iron-resize", { bubbles: true, composed: true }));
+      return;
+    }
+    super._action(action, data, ev);
+  }
+
   _nodes() {
     const nodes = this._items("node");
     const wanted = this._config.node;
@@ -507,7 +649,7 @@ export class ProxmoxCard extends ProxmoxBaseCard {
       .filter(Boolean)
       .join(" · ");
     const pills = `${update?.state === "on" ? `<button class="pill warn" data-action="more-info" data-entity="${esc(e.update)}">${esc(this._t("update"))}</button>` : ""}${proxmoxStatusPill(lang, status)}`;
-    const parts = [this._head(this._badge("logo", status !== "online"), node.name, sub, pills), this._rings(e)];
+    const parts = [this._head(this._badge("logo", status !== "online"), this._titleFor(node.name), sub, pills), this._rings(e)];
     if (this._config.show_vms !== false) parts.push(this._guestList(node, "vm"));
     if (this._config.show_containers !== false) parts.push(this._guestList(node, "container"));
     if (this._config.show_storage !== false) parts.push(this._storage(node));
@@ -525,9 +667,8 @@ export class ProxmoxCard extends ProxmoxBaseCard {
     const max = Number(this._config.max_items) || 5;
     const more = shown.length - max;
     const rows = shown.slice(0, max).map((g) => this._guestRow(g));
-    const label = this._t(kind === "vm" ? "vms_running" : "containers_running", { running, n: all.length });
-    return `<div class="sec"><span>${esc(label)}</span>${more > 0 ? `<span>${esc(this._t("c_more", { n: more }))}</span>` : ""}</div>
-      <div class="list">${rows.join("")}</div>`;
+    const aside = [`${running}/${all.length}`, more > 0 ? this._t("c_more", { n: more }) : ""].filter(Boolean).join(" · ");
+    return this._section(kind, kind, this._t(kind === "vm" ? "vms" : "containers"), aside, `<div class="list">${rows.join("")}</div>`);
   }
 
   _guestRow(g) {
@@ -555,14 +696,17 @@ export class ProxmoxCard extends ProxmoxBaseCard {
     const state = (s, slot) => proxmoxState(this._hass, s.entities[slot])?.state;
     list = list.filter((s) => state(s, "active") !== "off" && state(s, "enabled") !== "off");
     if (!list.length) return "";
+    // As the storage of System Hub's System Monitor card: name, used / total and percentage, the bar under them
     const rows = list.map((s) => {
       const pct = this._pctOf(s.entities.used_pct, s.entities.used, s.entities.total);
-      const color = pct === null ? "transparent" : pct >= 90 ? "var(--tone-bad)" : pct >= 75 ? "var(--tone-warn)" : "var(--tone-good)";
-      return `<div class="srow"><span class="k" title="${esc(this._of(s.entities.used, s.entities.total))}">${esc(s.key)}</span>
-        <span class="bar"><i style="width:${pct === null ? 0 : Math.max(0, Math.min(100, pct)).toFixed(1)}%;background:${color}"></i></span>
-        <span class="v">${pct === null ? "" : proxmoxPct(pct)}</span></div>`;
+      const level = pct === null ? "" : gaugeLevel("disk", pct);
+      const of = this._of(s.entities.used, s.entities.total);
+      const target = s.entities.used_pct || s.entities.used;
+      return `<div class="vol ${level}"${target ? ` data-action="more-info" data-entity="${esc(target)}" role="button" tabindex="0" style="cursor:pointer"` : ""}>
+        <div class="line">${icon("disk")}<span class="k" title="${esc(s.key)}">${esc(s.key)}</span><span class="v">${esc([of, pct === null ? "" : `${Math.round(pct)}%`].filter(Boolean).join("  "))}</span></div>
+        <div class="bar"><i style="width:${pct === null ? 0 : Math.max(0, Math.min(100, pct)).toFixed(1)}%"></i></div></div>`;
     });
-    return `<div class="sec"><span>${esc(this._t("storage"))}</span></div><div>${rows.join("")}</div>`;
+    return this._section("storage", "storage", this._t("storage"), "", `<div class="vols">${rows.join("")}</div>`);
   }
 }
 
@@ -588,10 +732,10 @@ export class ProxmoxMiniCard extends Zoomable(ProxmoxCard) {
       const update = proxmoxState(this._hass, n.entities.update)?.state === "on"
         ? `<button class="pill warn" data-action="more-info" data-entity="${esc(n.entities.update)}">${esc(this._t("update"))}</button>`
         : "";
-      const head = this._head(this._badge("logo", status !== "online"), n.name, this._counts(n), `${update}${status === "online" ? "" : proxmoxStatusPill(this._lang(), status)}${this._zoomButton()}`);
+      const head = this._head(this._badge("logo", status !== "online"), this._titleFor(n.name), this._counts(n), `${update}${status === "online" ? "" : proxmoxStatusPill(this._lang(), status)}${this._zoomButton()}`);
       return `${head}${this._notes()}${this._miniBars(n.entities)}`;
     }
-    const head = this._head(this._badge("logo", worst), this._t("title"), sub, this._zoomButton());
+    const head = this._head(this._badge("logo", worst), this._config.title || this._t("title"), sub, this._zoomButton());
     const rows = nodes.map((n) => {
       const status = proxmoxStatus(this._hass, n);
       return `<div class="row"><span class="dot ${status}"></span>
@@ -633,6 +777,10 @@ export class ProxmoxGuestCard extends ProxmoxBaseCard {
     return [].concat(list).map((g) => String(g));
   }
 
+  _several() {
+    return this._wanted().length > 1;
+  }
+
   _guests() {
     const all = [...this._items("vm"), ...this._items("container")];
     return this._wanted().map((key) => ({ key, item: all.find((g) => g.key === key || g.name.toLowerCase() === key.toLowerCase()) }));
@@ -671,7 +819,7 @@ export class ProxmoxGuestCard extends ProxmoxBaseCard {
     const lang = this._lang();
     const e = g.entities;
     const status = proxmoxStatus(this._hass, g);
-    const parts = [this._head(this._badge(g.kind === "vm" ? "vm" : "container", status !== "running"), g.name, this._subtitle(g, status), proxmoxStatusPill(lang, status))];
+    const parts = [this._head(this._badge(g.kind === "vm" ? "vm" : "container", status !== "running"), this._titleFor(g.name), this._subtitle(g, status), proxmoxStatusPill(lang, status))];
     if (status === "running") parts.push(this._rings(e));
     else {
       const facts = [];
@@ -770,6 +918,7 @@ class ProxmoxEditorBase extends HTMLElement {
 
   _schema() {
     return [
+      { name: "title", selector: { text: {} } },
       ...this._fields(),
       { type: "grid", name: "", schema: this.constructor.toggles.map((name) => ({ name, selector: { boolean: {} } })) },
       this._languageField(),
@@ -831,7 +980,7 @@ class ProxmoxCardEditor extends ProxmoxEditorBase {
   }
 
   static get defaults() {
-    return { max_items: 5 };
+    return { max_items: 5, collapsed: false };
   }
 
   _fields() {
@@ -847,6 +996,7 @@ class ProxmoxCardEditor extends ProxmoxEditorBase {
         },
       },
       { name: "max_items", selector: { number: { min: 1, max: 30, step: 1, mode: "box" } } },
+      { name: "collapsed", selector: { boolean: {} } },
     ];
   }
 }

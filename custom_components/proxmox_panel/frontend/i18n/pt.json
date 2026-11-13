@@ -107,6 +107,8 @@
   "e_show_subtitle": "Subtítulo",
   "e_zoom": "Botão para o cartão completo",
   "e_max_items": "Máquinas mostradas por lista",
+  "e_title": "Título personalizado",
+  "e_collapsed": "Secções recolhidas",
   "e_language": "Idioma",
   "e_lang_auto": "Como no Home Assistant"
 }

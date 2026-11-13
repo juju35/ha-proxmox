@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0 - 2026-11-13
+
+### Features
+- **Title** ([#7](https://github.com/juju35/ha-proxmox/issues/7), suggested by @mielikki33): `title` (also in the visual editors) replaces the node's name in the header of the node cards (*Proxmox* instead of *pve*), the machine's on the machine cards, and the header of the mini card over several nodes.
+- **Sections that fold** (#7): on the node card, the virtual machines, the containers and the storage are sections with their icon, their count and a chevron; a click on their heading folds or unfolds them. `collapsed: true` (also in the visual editor) starts them folded, and a click elsewhere on the page folds them again.
+
+### Improvements
+- **CPU, RAM and disk as the other cards** (#7): the gauges are drawn as on System Hub's System Monitor card and the NAS card, a ring with the metric's icon and its whole percentage, blue then orange and red from the thresholds (70 / 90 % for the CPU and the RAM, 80 / 90 % for the disk), the 24-hour curve behind the whole gauge; a gauge opens its entity. The storage reads as System Monitor's: name, used / total and percentage, the bar under them, in the same colours. The mini cards' bars follow.
+
 ## 1.0.1 - 2026-11-13
 
 ### Fixes

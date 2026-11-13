@@ -107,6 +107,8 @@
   "e_show_subtitle": "Podnaslov",
   "e_zoom": "Dugme ka celoj kartici",
   "e_max_items": "Mašine po listi",
+  "e_title": "Sopstveni naslov",
+  "e_collapsed": "Skupljeni odeljci",
   "e_language": "Jezik",
   "e_lang_auto": "Kao u Home Assistant-u"
 }

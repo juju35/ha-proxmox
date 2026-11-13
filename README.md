@@ -97,7 +97,11 @@ Four Lovelace cards come with the integration: nothing to install separately. Ev
 ```yaml
 type: custom:proxmox-card
 node: pve1          # a node, by name; all: every node, one after the other; left out: the first one
+title: Proxmox      # instead of the node's name
+collapsed: true     # the sections start folded
 ```
+
+CPU, RAM and disk are drawn as on System Hub's System Monitor card and the NAS card: a ring with the metric's icon and its percentage, blue, then orange and red from the thresholds (70 / 90 % for the CPU and the RAM, 80 / 90 % for the disk), the last 24 hours behind the CPU and RAM gauges, used / total under them; a gauge opens its entity. The virtual machines, the containers and the storage are sections: a click on their heading folds or unfolds them.
 
 | Option | Default | Description |
 |---|---|---|
@@ -108,6 +112,8 @@ node: pve1          # a node, by name; all: every node, one after the other; lef
 | `show_stopped` | `true` | `false` leaves the stopped machines out of the lists |
 | `max_items` | `5` | Machines shown per list; the others are counted (`More: 3`) |
 | `show_actions` | `true` | The buttons of the machines (administrators only) |
+| `collapsed` | `false` | `true`: the virtual machines, containers and storage sections start folded, and fold again on a click elsewhere on the page |
+| `title` | the node's name | The header's title (with a single node; with `node: all` each node keeps its name) |
 | `show_title` | `true` | The node's name in the header |
 | `show_subtitle` | `true` | Uptime and Proxmox VE version under it |
 | `language` | Home Assistant's | One of the 22 languages below |
@@ -118,7 +124,7 @@ node: pve1          # a node, by name; all: every node, one after the other; lef
 type: custom:proxmox-mini-card
 ```
 
-One line per node with its CPU, RAM and disk bars and the machines running (`node:` keeps one, then its counts become the subtitle). The round button at the top right (`zoom: false` removes it) shows the node card in its place, with the same options; a click anywhere outside the card brings the compact view back. Options: `node`, `zoom`, `show_title`, `show_subtitle`, `language`, and those of the node card for the zoomed view.
+One line per node with its CPU, RAM and disk bars and the machines running (`node:` keeps one, then its counts become the subtitle). The round button at the top right (`zoom: false` removes it) shows the node card in its place, with the same options; a click anywhere outside the card brings the compact view back. Options: `node`, `title` (the header's, over several nodes; else the node's), `zoom`, `show_title`, `show_subtitle`, `language`, and those of the node card for the zoomed view.
 
 ### Virtual machine or container card
 
@@ -132,11 +138,12 @@ guest: 102          # a VMID; guests: [100, 202] stacks several machines
 | `guest` / `guests` | — | The machine (its VMID, or its name), or a list of them |
 | `show_network` | `true` | Download and upload of the machine |
 | `show_actions` | `true` | The buttons that fit its status (administrators only) |
+| `title` | the machine's name | The header's title (with a single machine) |
 | `show_title` | `true` | The machine's name in the header |
 | `show_subtitle` | `true` | `VM 102 · pve1 · Up for 12 days` under it |
 | `language` | Home Assistant's | One of the 22 languages below |
 
-A running machine shows its CPU, RAM and disk rings (24-hour curves behind CPU and RAM); a stopped one its CPUs, RAM and disk size.
+A running machine shows its CPU, RAM and disk gauges (24-hour curves behind CPU and RAM); a stopped one its CPUs, RAM and disk size.
 
 ### Virtual machine or container mini card
 

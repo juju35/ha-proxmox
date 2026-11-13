@@ -107,6 +107,8 @@
   "e_show_subtitle": "Subtitlu",
   "e_zoom": "Buton spre cardul complet",
   "e_max_items": "Mașini afișate pe listă",
+  "e_title": "Titlu personalizat",
+  "e_collapsed": "Secțiuni restrânse",
   "e_language": "Limbă",
   "e_lang_auto": "Ca în Home Assistant"
 }

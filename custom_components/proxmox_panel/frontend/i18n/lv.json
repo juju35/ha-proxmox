@@ -107,6 +107,8 @@
   "e_show_subtitle": "Apakšvirsraksts",
   "e_zoom": "Poga uz pilno karti",
   "e_max_items": "Mašīnas sarakstā",
+  "e_title": "Pielāgots nosaukums",
+  "e_collapsed": "Sakļautas sadaļas",
   "e_language": "Valoda",
   "e_lang_auto": "Kā Home Assistant"
 }
