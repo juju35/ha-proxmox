@@ -40,7 +40,7 @@ import {
   proxmoxUptime,
 } from "./proxmox-common.js";
 
-export const PROXMOX_CARDS_VERSION = "1.1.0";
+export const PROXMOX_CARDS_VERSION = "1.1.1";
 const LANGUAGE_NAMES = {
   en: "English", fr: "Français", de: "Deutsch", es: "Español", sr: "Српски", "sr-Latn": "Srpski (latinica)", it: "Italiano",
   nl: "Nederlands", pt: "Português", pl: "Polski", ro: "Română", da: "Dansk", sv: "Svenska", bg: "Български", ru: "Русский",
@@ -983,37 +983,40 @@ class ProxmoxCardEditor extends ProxmoxEditorBase {
     return { max_items: 5, collapsed: false };
   }
 
-  _fields() {
+  _nodeField() {
     const nodes = inventory?.data?.node || [];
-    return [
-      {
-        name: "node",
-        selector: {
-          select: {
-            mode: "dropdown",
-            options: [{ value: "", label: this._t("e_first_node") }, { value: "all", label: this._t("all_nodes") }, ...nodes.map((n) => ({ value: n.name, label: n.name }))],
-          },
+    return {
+      name: "node",
+      selector: {
+        select: {
+          mode: "dropdown",
+          options: [{ value: "", label: this._t("e_first_node") }, { value: "all", label: this._t("all_nodes") }, ...nodes.map((n) => ({ value: n.name, label: n.name }))],
         },
       },
+    };
+  }
+
+  _fields() {
+    return [
+      this._nodeField(),
       { name: "max_items", selector: { number: { min: 1, max: 30, step: 1, mode: "box" } } },
       { name: "collapsed", selector: { boolean: {} } },
     ];
   }
 }
 
-class ProxmoxMiniCardEditor extends ProxmoxEditorBase {
+// The zoomed view of the mini card is the node card: its editor offers the node card's options too.
+class ProxmoxMiniCardEditor extends ProxmoxCardEditor {
   static get toggles() {
-    return ["zoom", "show_title", "show_subtitle"];
+    return ["zoom", ...ProxmoxCardEditor.toggles];
   }
 
-  _fields() {
+  _nodeField() {
     const nodes = inventory?.data?.node || [];
-    return [
-      {
-        name: "node",
-        selector: { select: { mode: "dropdown", options: [{ value: "", label: this._t("all_nodes") }, ...nodes.map((n) => ({ value: n.name, label: n.name }))] } },
-      },
-    ];
+    return {
+      name: "node",
+      selector: { select: { mode: "dropdown", options: [{ value: "", label: this._t("all_nodes") }, ...nodes.map((n) => ({ value: n.name, label: n.name }))] } },
+    };
   }
 }
 

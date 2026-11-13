@@ -109,7 +109,8 @@ test("machine card: a running VM, a stopped container, a missing one", async () 
   const vm = await make(cards.ProxmoxGuestCard, { guest: 102 });
   let html = vm._card();
   assert.match(html, /docker-host/);
-  assert.match(html, /VM 102 · pve1 · Up for 12 days/);
+  // The uptime is counted from the mock states' fixed time to now: its number of days grows.
+  assert.match(html, /VM 102 · pve1 · Up for \d+ days/);
   assert.match(html, /<b>77%<\/b>/);
   assert.match(html, /Download 525 GiB/);
   assert.match(html, /data-press="pause"/);
@@ -168,6 +169,26 @@ test("the guest editor writes guest for one machine and guests for several", () 
   assert.deepEqual(e._clean(e._fromForm({ guests: ["102"] })), { guest: 102 });
   assert.deepEqual(e._clean(e._fromForm({ guests: ["100", "202"] })), { guests: [100, 202] });
   assert.deepEqual(e._clean({ show_network: true, show_title: false }), { show_title: false });
+});
+
+test("the mini card editor offers the node card options its zoomed view uses, plus zoom", async () => {
+  await make(cards.ProxmoxCard, {});
+  const names = (tag) => {
+    const e = new (customElements.get(tag))();
+    e._hass = hass();
+    e._config = {};
+    return e._schema().flatMap((s) => (s.schema ? s.schema : [s]).map((x) => x.name));
+  };
+  const full = names("proxmox-card-editor");
+  const mini = names("proxmox-mini-card-editor");
+  for (const n of ["node", "title", "show_vms", "show_containers", "show_storage", "show_stopped", "show_actions", "max_items", "collapsed", "show_title", "show_subtitle", "language"]) {
+    assert.ok(full.includes(n), `full: ${n}`);
+    assert.ok(mini.includes(n), `mini: ${n}`);
+  }
+  assert.ok(mini.includes("zoom") && !full.includes("zoom"));
+  const e = new (customElements.get("proxmox-mini-card-editor"))();
+  assert.deepEqual(e._clean({ zoom: true, show_vms: false, max_items: 5, collapsed: false }), { show_vms: false });
+  assert.deepEqual(e._clean({ max_items: 8, collapsed: true }), { max_items: 8, collapsed: true });
 });
 
 test("every card is offered in the card picker", () => {

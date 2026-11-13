@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 - 2026-11-14
+
+### Fixes
+- Node mini card visual editor: the node card options shown in its zoomed view (`show_vms`, `show_containers`, `show_storage`, `show_stopped`, `show_actions`, `max_items`, `collapsed`) can now be set there too.
+
 ## 1.1.0 - 2026-11-13
 
 ### Features

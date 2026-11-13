@@ -1,7 +1,7 @@
 """Constants for the Proxmox Panel integration."""
 
 DOMAIN = "proxmox_panel"
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 # The core Proxmox VE integration, whose devices and entities the panel shows
 PROXMOX_DOMAIN = "proxmoxve"
