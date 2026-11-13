@@ -396,3 +396,34 @@ export const PROXMOX_SHARED_STYLE = `
 /** CSS variables of the panel and the cards. */
 export const PROXMOX_VARS = `--px-accent:#e57000; --tone-good:var(--success-color, #43a047); --tone-warn:var(--warning-color, #ffa600);
   --tone-bad:var(--error-color, #db4437); --tone-down:#43a047; --tone-up:#1e88e5;`;
+
+/**
+ * No rewrite of `host` (a card, the panel) between a press in it and the end of the click: Home Assistant updates it
+ * several times a second, and a rewrite under the pointer replaces the element pressed, so that the click lands on
+ * the host itself and does nothing. While `host._pressing`, its update marks `host._dirty` instead; `flush()` draws
+ * that pending update once released (after the click, which comes in the same task as the release).
+ */
+export const proxmoxHoldUnderPress = (host, flush) => {
+  host._onPressEnd = () => {
+    proxmoxReleasePress(host, false);
+    setTimeout(() => {
+      host._pressing = false;
+      if (!host._dirty) return;
+      host._dirty = false;
+      flush();
+    }, 0);
+  };
+  host._onPressStart = () => {
+    host._pressing = true;
+    window.addEventListener("pointerup", host._onPressEnd, true);
+    window.addEventListener("pointercancel", host._onPressEnd, true);
+  };
+  host.shadowRoot.addEventListener("pointerdown", host._onPressStart);
+};
+
+/** Stops listening for the release of a press; `drop` also ends the press (the host left the page). */
+export const proxmoxReleasePress = (host, drop = true) => {
+  if (drop) host._pressing = false;
+  window.removeEventListener("pointerup", host._onPressEnd, true);
+  window.removeEventListener("pointercancel", host._onPressEnd, true);
+};

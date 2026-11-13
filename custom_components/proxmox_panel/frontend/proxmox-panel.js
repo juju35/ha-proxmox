@@ -34,6 +34,8 @@ import {
   proxmoxState,
   proxmoxNum,
   proxmoxBytesOf,
+  proxmoxHoldUnderPress,
+  proxmoxReleasePress,
   proxmoxUptime,
   proxmoxPct,
   proxmoxStatus,
@@ -139,25 +141,8 @@ export class ProxmoxPanel extends HTMLElement {
     this._message = null; // { tone, text, tab }
     this._history = {}; // entity id → [[time ms, value]]
     this._bodies = {}; // tab → last rendered body markup
-    // No rewrite between a press and the end of its click: Home Assistant updates the panel several times a second, and a
-    // rewrite under the pointer replaces the element pressed, so that the click lands on the panel itself and does
-    // nothing. The pending update is drawn once released (after the click).
-    this._onPressStart = () => {
-      this._pressing = true;
-      window.addEventListener("pointerup", this._onPressEnd, true);
-      window.addEventListener("pointercancel", this._onPressEnd, true);
-    };
-    this._onPressEnd = () => {
-      window.removeEventListener("pointerup", this._onPressEnd, true);
-      window.removeEventListener("pointercancel", this._onPressEnd, true);
-      setTimeout(() => {
-        this._pressing = false;
-        if (!this._dirty) return;
-        this._dirty = false;
-        this._refresh();
-      }, 0);
-    };
-    this.shadowRoot.addEventListener("pointerdown", this._onPressStart);
+    // No rewrite between a press and the end of its click (see proxmoxHoldUnderPress).
+    proxmoxHoldUnderPress(this, () => this._refresh());
     // The click ends the press (after the element's own listeners, which draw what they change at once).
     this.shadowRoot.addEventListener("click", () => {
       this._pressing = false;
@@ -198,9 +183,7 @@ export class ProxmoxPanel extends HTMLElement {
   }
 
   disconnectedCallback() {
-    this._pressing = false;
-    window.removeEventListener("pointerup", this._onPressEnd, true);
-    window.removeEventListener("pointercancel", this._onPressEnd, true);
+    proxmoxReleasePress(this);
     clearInterval(this._historyTimer);
     clearTimeout(this._retryTimer);
     if (this._unsub) {
