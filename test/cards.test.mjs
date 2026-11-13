@@ -66,6 +66,25 @@ test("mini card: one line per node, zoom to the full card", async () => {
   assert.doesNotMatch(noZoom._card(), /data-action="zoom"/);
 });
 
+test("mini card: a tap elsewhere (pointer) folds the zoom, not a drag that ends outside; leaving the page too", async () => {
+  const card = await make(cards.ProxmoxMiniCard, {});
+  card.connectedCallback();
+  card._zoomed = true;
+  // Pressed in the card and released outside of it (a slider dragged out): nothing folds.
+  card._outside.tap({ composedPath: () => [card] });
+  assert.equal(card._zoomed, true);
+  // A tap on a spot that sends no click (iOS): the pointer alone folds it.
+  card._outside.tap({ composedPath: () => [] });
+  assert.equal(card._zoomed, false);
+  // Left zoomed and back on the page: compact.
+  card._zoomed = true;
+  card.disconnectedCallback();
+  card.connectedCallback();
+  assert.equal(card._zoomed, false);
+  assert.doesNotMatch(card._card(), /class="rings"/);
+  card.disconnectedCallback();
+});
+
 test("machine card: a running VM, a stopped container, a missing one", async () => {
   const vm = await make(cards.ProxmoxGuestCard, { guest: 102 });
   let html = vm._card();
