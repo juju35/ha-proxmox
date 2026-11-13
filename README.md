@@ -124,7 +124,7 @@ CPU, RAM and disk are drawn as on System Hub's System Monitor card and the NAS c
 type: custom:proxmox-mini-card
 ```
 
-One line per node with its CPU, RAM and disk bars and the machines running (`node:` keeps one, then its counts become the subtitle). The round button at the top right (`zoom: false` removes it) shows the node card in its place, with the same options; a click anywhere outside the card brings the compact view back. Options: `node`, `title` (the header's, over several nodes; else the node's), `zoom`, `show_title`, `show_subtitle`, `language`, and those of the node card for the zoomed view.
+One line per node with its CPU, RAM and disk bars and the machines running (`node:` keeps one, then its counts become the subtitle). The round button at the top right (`zoom: false` removes it) shows the node card in its place, with the same options; a click anywhere outside the card brings the compact view back. Options: `node`, `title` (the header's, over several nodes; else the node's), `zoom`, `show_title`, `show_subtitle`, `language`, and those of the node card for the zoomed view (`show_vms`, `show_containers`, `show_storage`, `show_stopped`, `show_actions`, `max_items`, `collapsed`), which can be set on the mini card too, in YAML or in its visual editor.
 
 ### Virtual machine or container card
 
