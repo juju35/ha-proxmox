@@ -24,7 +24,7 @@ globalThis.CustomEvent ??= class {
   }
 };
 globalThis.history ??= { replaceState() {}, pushState() {} };
-globalThis.window ??= { dispatchEvent() {}, customCards: [] };
+globalThis.window ??= { dispatchEvent() {}, addEventListener() {}, removeEventListener() {}, customCards: [] };
 globalThis.document ??= { addEventListener() {}, removeEventListener() {}, createElement: () => ({ addEventListener() {}, appendChild() {} }) };
 
 const base = new URL("../custom_components/proxmox_panel/frontend/", import.meta.url);

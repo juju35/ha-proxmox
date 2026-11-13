@@ -139,6 +139,29 @@ export class ProxmoxPanel extends HTMLElement {
     this._message = null; // { tone, text, tab }
     this._history = {}; // entity id → [[time ms, value]]
     this._bodies = {}; // tab → last rendered body markup
+    // No rewrite between a press and the end of its click: Home Assistant updates the panel several times a second, and a
+    // rewrite under the pointer replaces the element pressed, so that the click lands on the panel itself and does
+    // nothing. The pending update is drawn once released (after the click).
+    this._onPressStart = () => {
+      this._pressing = true;
+      window.addEventListener("pointerup", this._onPressEnd, true);
+      window.addEventListener("pointercancel", this._onPressEnd, true);
+    };
+    this._onPressEnd = () => {
+      window.removeEventListener("pointerup", this._onPressEnd, true);
+      window.removeEventListener("pointercancel", this._onPressEnd, true);
+      setTimeout(() => {
+        this._pressing = false;
+        if (!this._dirty) return;
+        this._dirty = false;
+        this._refresh();
+      }, 0);
+    };
+    this.shadowRoot.addEventListener("pointerdown", this._onPressStart);
+    // The click ends the press (after the element's own listeners, which draw what they change at once).
+    this.shadowRoot.addEventListener("click", () => {
+      this._pressing = false;
+    });
   }
 
   // /proxmox/<tab> opens that tab (Home Assistant sets the route; the base address is Nodes)
@@ -175,6 +198,9 @@ export class ProxmoxPanel extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this._pressing = false;
+    window.removeEventListener("pointerup", this._onPressEnd, true);
+    window.removeEventListener("pointercancel", this._onPressEnd, true);
     clearInterval(this._historyTimer);
     clearTimeout(this._retryTimer);
     if (this._unsub) {
@@ -401,6 +427,11 @@ export class ProxmoxPanel extends HTMLElement {
 
   /** States changed: the shown tab's body again, only if its markup changed (the search keeps its focus). */
   _refresh() {
+    // A press in progress: drawn once released (see _onPressStart).
+    if (this._pressing) {
+      this._dirty = true;
+      return;
+    }
     if (this._tab !== "settings") this._renderTab(this._tab);
   }
 

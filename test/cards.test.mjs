@@ -66,6 +66,21 @@ test("mini card: one line per node, zoom to the full card", async () => {
   assert.doesNotMatch(noZoom._card(), /data-action="zoom"/);
 });
 
+test("no rewrite under a press: drawn by the click, or once released", async () => {
+  const card = await make(cards.ProxmoxCard, {});
+  card._update(true);
+  const before = card.shadowRoot.innerHTML;
+  card._onPressStart();
+  card._message = { tone: "ok", text: "Held under the pointer" };
+  card._update(true);
+  assert.equal(card.shadowRoot.innerHTML, before, "no rewrite under the pointer");
+  card._onPressEnd();
+  await new Promise((r) => setTimeout(r, 5));
+  assert.match(card.shadowRoot.innerHTML, /Held under the pointer/, "drawn once released");
+  assert.equal(card._pressing, false);
+  card.disconnectedCallback();
+});
+
 test("mini card: a tap elsewhere (pointer) folds the zoom, not a drag that ends outside; leaving the page too", async () => {
   const card = await make(cards.ProxmoxMiniCard, {});
   card.connectedCallback();

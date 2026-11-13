@@ -166,10 +166,38 @@ class ProxmoxBaseCard extends HTMLElement {
     this._history = {};
     this._confirm = null; // { entity, action, name }
     this._message = null; // { tone, text }
+    // No rewrite between a press and the end of its click: Home Assistant updates the card several times a second, and a
+    // rewrite under the pointer replaces the element pressed, so that the click lands on the card itself and does
+    // nothing. The pending update is drawn once released (after the click).
+    this._onPressStart = () => {
+      this._pressing = true;
+      window.addEventListener("pointerup", this._onPressEnd, true);
+      window.addEventListener("pointercancel", this._onPressEnd, true);
+    };
+    this._onPressEnd = () => {
+      window.removeEventListener("pointerup", this._onPressEnd, true);
+      window.removeEventListener("pointercancel", this._onPressEnd, true);
+      setTimeout(() => {
+        this._pressing = false;
+        if (!this._dirty) return;
+        this._dirty = false;
+        this._update(this._dirtyForce);
+        this._dirtyForce = false;
+      }, 0);
+    };
+    this.shadowRoot.addEventListener("pointerdown", this._onPressStart);
     this.shadowRoot.addEventListener("click", (ev) => {
+      // The click ends the press: what it changes is drawn at once.
+      this._pressing = false;
       const el = ev.composedPath().find((n) => n?.dataset?.action);
       if (el) this._action(el.dataset.action, el.dataset, ev);
     });
+  }
+
+  disconnectedCallback() {
+    this._pressing = false;
+    window.removeEventListener("pointerup", this._onPressEnd, true);
+    window.removeEventListener("pointercancel", this._onPressEnd, true);
   }
 
   setConfig(config) {
@@ -237,6 +265,12 @@ class ProxmoxBaseCard extends HTMLElement {
   /** Renders again only when what the card shows changed (its states, the language, the zoom). */
   _update(force = false) {
     if (!this._hass || !this._config) return;
+    // A press in progress: drawn once released (see _onPressStart).
+    if (this._pressing) {
+      this._dirty = true;
+      this._dirtyForce ||= force;
+      return;
+    }
     if (this._historyAt && Date.now() - this._historyAt >= INVENTORY_TTL) this._loadHistory();
     const html = this._card();
     if (!force && html === this._last) return;
