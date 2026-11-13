@@ -169,3 +169,17 @@ test("no Proxmox VE: the panel offers to add it; not allowed: says so", () => {
 test("names are escaped", () => {
   assert.equal(lib.proxmoxPanelEsc(`<b a="1">&'`), "&lt;b a=&quot;1&quot;&gt;&amp;&#39;");
 });
+
+test("no rewrite of the panel under a press: drawn once released", async () => {
+  const p = panel();
+  let renders = 0;
+  p._renderTab = () => renders++;
+  p._onPressStart();
+  p._refresh();
+  assert.equal(renders, 0, "no rewrite under the pointer");
+  p._onPressEnd();
+  await new Promise((r) => setTimeout(r, 5));
+  assert.equal(renders, 1);
+  assert.equal(p._pressing, false);
+  p.disconnectedCallback();
+});

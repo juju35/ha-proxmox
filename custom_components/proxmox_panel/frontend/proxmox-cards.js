@@ -24,6 +24,7 @@ import {
   proxmoxBytesOf,
   proxmoxFind,
   proxmoxHistory,
+  proxmoxHoldUnderPress,
   proxmoxLang,
   proxmoxLoadStrings,
   proxmoxNum,
@@ -32,6 +33,7 @@ import {
   proxmoxPanelEsc as esc,
   proxmoxPanelIcon as icon,
   proxmoxPct,
+  proxmoxReleasePress,
   proxmoxRing,
   proxmoxState,
   proxmoxStatus,
@@ -40,7 +42,7 @@ import {
   proxmoxUptime,
 } from "./proxmox-common.js";
 
-export const PROXMOX_CARDS_VERSION = "1.0.0";
+export const PROXMOX_CARDS_VERSION = "1.0.1";
 const LANGUAGE_NAMES = {
   en: "English", fr: "Français", de: "Deutsch", es: "Español", sr: "Српски", "sr-Latn": "Srpski (latinica)", it: "Italiano",
   nl: "Nederlands", pt: "Português", pl: "Polski", ro: "Română", da: "Dansk", sv: "Svenska", bg: "Български", ru: "Русский",
@@ -78,6 +80,42 @@ export const resetInventory = () => {
 };
 
 const inDialog = (ev) => ev.composedPath().some((el) => /dialog|more-info/i.test(el?.tagName || ""));
+
+// "A click elsewhere" is caught on the pointer, not only on the click event: on iOS (Safari and the companion app)
+// a tap on something that is not clickable (the background, an empty spot, a card with no action) sends no click to
+// the page. The handler runs when the press and the release are both outside the card (a slider dragged out of the
+// card does not count), and a scroll does not count (the browser cancels the pointer); keyboard clicks still go
+// through the click event. The handler keeps its own checks (outside of the card, not in a dialog).
+const watchOutside = (card, handler) => {
+  let downOutside = false;
+  const onDown = (ev) => {
+    downOutside = !ev.composedPath().includes(card);
+  };
+  const onUp = (ev) => {
+    if (downOutside) handler(ev);
+    downOutside = false;
+  };
+  const onClick = (ev) => {
+    if (ev.detail === 0) handler(ev);
+  };
+  return {
+    on() {
+      document.addEventListener("pointerdown", onDown, true);
+      document.addEventListener("pointerup", onUp, true);
+      document.addEventListener("click", onClick, true);
+    },
+    off() {
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("pointerup", onUp, true);
+      document.removeEventListener("click", onClick, true);
+    },
+    // A tap (press and release at the same spot), for the tests.
+    tap(ev) {
+      onDown(ev);
+      onUp(ev);
+    },
+  };
+};
 
 /** A node by its name, its Proxmox id (node/pve1) or its device id. */
 const findNode = (nodes, wanted) => {
@@ -130,10 +168,21 @@ class ProxmoxBaseCard extends HTMLElement {
     this._history = {};
     this._confirm = null; // { entity, action, name }
     this._message = null; // { tone, text }
+    // No rewrite between a press and the end of its click (see proxmoxHoldUnderPress).
+    proxmoxHoldUnderPress(this, () => {
+      this._update(this._dirtyForce);
+      this._dirtyForce = false;
+    });
     this.shadowRoot.addEventListener("click", (ev) => {
+      // The click ends the press: what it changes is drawn at once.
+      this._pressing = false;
       const el = ev.composedPath().find((n) => n?.dataset?.action);
       if (el) this._action(el.dataset.action, el.dataset, ev);
     });
+  }
+
+  disconnectedCallback() {
+    proxmoxReleasePress(this);
   }
 
   setConfig(config) {
@@ -201,6 +250,12 @@ class ProxmoxBaseCard extends HTMLElement {
   /** Renders again only when what the card shows changed (its states, the language, the zoom). */
   _update(force = false) {
     if (!this._hass || !this._config) return;
+    // A press in progress: drawn once released (see _onPressStart).
+    if (this._pressing) {
+      this._dirty = true;
+      this._dirtyForce ||= force;
+      return;
+    }
     if (this._historyAt && Date.now() - this._historyAt >= INVENTORY_TTL) this._loadHistory();
     const html = this._card();
     if (!force && html === this._last) return;
@@ -354,11 +409,24 @@ const Zoomable = (Base) =>
     }
 
     connectedCallback() {
-      document.addEventListener("click", this._onOutside, true);
+      super.connectedCallback?.();
+      this._outside ??= watchOutside(this, this._onOutside);
+      this._outside.on();
+      // Back on the page after leaving it zoomed: rendered again in its compact view.
+      if (this._unzoomedAway) {
+        this._unzoomedAway = false;
+        this._update();
+      }
     }
 
     disconnectedCallback() {
-      document.removeEventListener("click", this._onOutside, true);
+      super.disconnectedCallback?.();
+      this._outside?.off();
+      // Left (another dashboard view, a conditional card hidden): back to the compact view.
+      if (this._zoomed) {
+        this._zoomed = false;
+        this._unzoomedAway = true;
+      }
     }
 
     getCardSize() {
