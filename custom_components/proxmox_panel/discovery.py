@@ -11,6 +11,11 @@ Each entity's unique id ends with the key of its description (``node_cpu``, ``vm
 gets, per device, the entity id of each "slot" it shows (``cpu``, ``memory``, ``running``, ``start``…) and the slots
 whose entity is disabled (the backup sensors are disabled by default), so that it can say how to enable them.
 Nothing here talks to Proxmox: the panel reads the states, and acts by pressing the integration's buttons.
+
+The custom "Proxmox VE" integration (dougiteixeira/proxmoxve, same ``proxmoxve`` domain, juju35/ha-proxmox#12) is read
+too. Its identifiers carry the kind in upper case (``<entry>_NODE_<node>``, ``<entry>_QEMU_<vmid>``,
+``<entry>_LXC_<vmid>``, ``<entry>_STORAGE_<storage>``) and its unique ids are ``<entry>_<resource>_<key>`` with keys of
+its own (``CUSTOM_SLOTS``); the backup entities of a node are ``<entry>_backup_<node>_<key>``.
 """
 
 from __future__ import annotations
@@ -40,6 +45,7 @@ SLOTS: dict[str, dict[str, dict[str, str]]] = {
             "node_uptime": "uptime",
             "node_status": "status",
             "node_backup_last_backup": "last_backup",
+            "backup_last_backup": "last_backup",
             "node_backup_duration": "backup_duration",
         },
         "binary_sensor": {"status": "running", "node_backup_status": "backup_problem"},
@@ -111,6 +117,76 @@ SLOTS: dict[str, dict[str, dict[str, str]]] = {
 }
 KINDS = tuple(SLOTS)
 
+# The custom integration's kinds (upper case in its identifiers) and description keys, matched exactly once the
+# ``<entry>_<resource>_`` prefix of the unique id is removed.
+CUSTOM_KINDS = {"NODE": "node", "QEMU": "vm", "LXC": "container", "STORAGE": "storage"}
+_CUSTOM_GUEST: dict[str, dict[str, str]] = {
+    "sensor": {
+        "cpu": "cpu",
+        "memory_used": "memory",
+        "memory_total": "max_memory",
+        "memory_used_perc": "memory_pct",
+        "disk_used": "disk",
+        "disk_total": "max_disk",
+        "uptime": "uptime",
+        "status_raw": "status",
+        "network_in": "netin",
+        "network_out": "netout",
+    },
+    "binary_sensor": {"status": "running"},
+    "button": {
+        "start": "start",
+        "stop": "stop",
+        "reboot": "restart",
+        "suspend": "pause",
+        "hibernate": "hibernate",
+        "resume": "resume",
+        "reset": "reset",
+        "shutdown": "shutdown",
+        "snapshot": "snapshot_create",
+    },
+}
+CUSTOM_SLOTS: dict[str, dict[str, dict[str, str]]] = {
+    "node": {
+        "sensor": {
+            "cpu": "cpu",
+            "cpus": "max_cpu",
+            "memory_used": "memory",
+            "memory_total": "max_memory",
+            "memory_used_perc": "memory_pct",
+            "disk_used": "disk",
+            "disk_total": "max_disk",
+            "uptime": "uptime",
+            "status_raw": "status",
+        },
+        "binary_sensor": {"status": "running"},
+        "button": {
+            "reboot": "reboot",
+            "shutdown": "shutdown",
+            "startall": "start_all",
+            "stopall": "stop_all",
+            "suspendall": "suspend_all",
+        },
+        "update": {"node_update": "update"},
+    },
+    "vm": _CUSTOM_GUEST,
+    "container": _CUSTOM_GUEST,
+    "storage": {
+        "sensor": {
+            "disk_used": "used",
+            "disk_total": "total",
+            "disk_free": "available",
+            "disk_used_perc": "used_pct",
+        },
+        "binary_sensor": {"active": "active", "enabled": "enabled", "shared": "shared"},
+    },
+}
+# A node's backup entities, ``<entry>_backup_<node>_<key>``.
+CUSTOM_BACKUP_SLOTS = {
+    "sensor": {"finished": "last_backup", "duration": "backup_duration"},
+    "binary_sensor": {"status": "backup_problem"},
+}
+
 
 @dataclass
 class Item:
@@ -143,14 +219,24 @@ class Inventory:
 
 
 def parse_identifier(entry_id: str, identifier: str) -> tuple[str, str] | None:
-    """(kind, key) of a proxmoxve device identifier of this entry, or None."""
+    """(kind, key) of a proxmoxve device identifier of this entry, or None (core or custom integration)."""
+    parsed = _parse(entry_id, identifier)
+    return parsed[:2] if parsed else None
+
+
+def _parse(entry_id: str, identifier: str) -> tuple[str, str, bool] | None:
+    """(kind, key, custom) of a proxmoxve device identifier of this entry, or None."""
     prefix = f"{entry_id}_"
     if not identifier.startswith(prefix):
         return None
     kind, sep, key = identifier[len(prefix) :].partition("_")
-    if not sep or not key or kind not in KINDS:
+    if not sep or not key:
         return None
-    return kind, key
+    if kind in CUSTOM_KINDS:
+        return CUSTOM_KINDS[kind], key, True
+    if kind not in KINDS:
+        return None
+    return kind, key, False
 
 
 def slot_of(kind: str, domain: str, unique_id: str) -> str | None:
@@ -159,6 +245,23 @@ def slot_of(kind: str, domain: str, unique_id: str) -> str | None:
     for key in sorted(keys, key=len, reverse=True):
         if unique_id == key or unique_id.endswith(f"_{key}"):
             return keys[key]
+    return None
+
+
+def custom_slot_of(entry_id: str, kind: str, key: str, domain: str, unique_id: str) -> str | None:
+    """The panel's slot for an entity of the custom integration: ``<entry>_<resource>_<key>``, ``<resource>`` being the
+    device's key (node name, vmid, storage) or, for a node's backups, ``backup_<node>``."""
+    tail = unique_id.removeprefix(f"{entry_id}_")
+    if kind == "node" and tail.startswith(f"backup_{key}_"):
+        return CUSTOM_BACKUP_SLOTS.get(domain, {}).get(tail[len(f"backup_{key}_") :])
+    keys = CUSTOM_SLOTS.get(kind, {}).get(domain, {})
+    if tail.startswith(f"{key}_"):
+        return keys.get(tail[len(key) + 1 :])
+    # A storage whose resource in the unique id is spelled otherwise (``storage/local``): its key ends the unique id.
+    if kind == "storage":
+        for name in sorted(keys, key=len, reverse=True):
+            if tail.endswith(f"_{name}"):
+                return keys[name]
     return None
 
 
@@ -190,13 +293,13 @@ def async_inventory(hass: HomeAssistant) -> Inventory:
                 (
                     p
                     for domain, identifier in device.identifiers
-                    if domain == PROXMOX_DOMAIN and (p := parse_identifier(entry.entry_id, identifier))
+                    if domain == PROXMOX_DOMAIN and (p := _parse(entry.entry_id, identifier))
                 ),
                 None,
             )
             if parsed is None:
                 continue
-            kind, key = parsed
+            kind, key, custom = parsed
             item = Item(
                 id=device.id,
                 kind=kind,
@@ -209,7 +312,11 @@ def async_inventory(hass: HomeAssistant) -> Inventory:
             for ent in er.async_entries_for_device(entities, device.id, include_disabled_entities=True):
                 if ent.platform != PROXMOX_DOMAIN:
                     continue
-                slot = slot_of(kind, ent.domain, ent.unique_id)
+                slot = (
+                    custom_slot_of(entry.entry_id, kind, key, ent.domain, ent.unique_id)
+                    if custom
+                    else slot_of(kind, ent.domain, ent.unique_id)
+                )
                 if slot is None:
                     continue
                 if ent.disabled_by is not None:

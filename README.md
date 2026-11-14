@@ -35,6 +35,7 @@ Home Assistant integration that adds a **Proxmox** panel to the sidebar and **Pr
 | Integration | What it is used for |
 |---|---|
 | [Proxmox VE](https://www.home-assistant.io/integrations/proxmoxve/) (built in) | Everything the panel and the cards show: its devices (nodes, virtual machines, containers, storage), their sensors, binary sensors and update entities, and its buttons for the actions |
+| [Proxmox VE (custom)](https://github.com/dougiteixeira/proxmoxve) | The same, from the custom integration of the same `proxmoxve` domain, installed in place of the built-in one |
 
 ## Prerequisites
 
@@ -87,6 +88,7 @@ The **Proxmox** entry of the sidebar, at `/proxmox` (each tab has its own addres
 | Show stopped machines | on | Off: the VMs and Containers tabs list the running and suspended machines only, and say how many are hidden |
 | Ask before stopping or restarting | on | Stop, shut down, reset, restart, hibernate and the node-wide actions wait for a confirmation |
 | Hide inactive storage | off | Storage that is disabled or not active is left out of the Storage tab |
+| Show 24 h history | on | Off: the nodes' CPU and RAM rings are drawn without their 24-hour curves, and no history is fetched |
 
 ## Cards
 
@@ -111,6 +113,7 @@ CPU, RAM and disk are drawn as on System Hub's System Monitor card and the NAS c
 | `show_storage` | `true` | The active storage of the node, with its gauge |
 | `show_stopped` | `true` | `false` leaves the stopped machines out of the lists |
 | `max_items` | `5` | Machines shown per list; the others are counted (`More: 3`) |
+| `show_history` | `true` | `false`: the CPU and RAM gauges without their 24-hour curves (no history is fetched) |
 | `show_actions` | `true` | The buttons of the machines (administrators only) |
 | `collapsed` | `false` | `true`: the virtual machines, containers and storage sections start folded, and fold again on a click elsewhere on the page |
 | `title` | the node's name | The header's title (with a single node; with `node: all` each node keeps its name) |
@@ -124,7 +127,7 @@ CPU, RAM and disk are drawn as on System Hub's System Monitor card and the NAS c
 type: custom:proxmox-mini-card
 ```
 
-One line per node with its CPU, RAM and disk bars and the machines running (`node:` keeps one, then its counts become the subtitle). The round button at the top right (`zoom: false` removes it) shows the node card in its place, with the same options; a click anywhere outside the card brings the compact view back. Options: `node`, `title` (the header's, over several nodes; else the node's), `zoom`, `show_title`, `show_subtitle`, `language`, and those of the node card for the zoomed view (`show_vms`, `show_containers`, `show_storage`, `show_stopped`, `show_actions`, `max_items`, `collapsed`), which can be set on the mini card too, in YAML or in its visual editor.
+One line per node with its CPU, RAM and disk bars and the machines running (`node:` keeps one, then its counts become the subtitle). The round button at the top right (`zoom: false` removes it) shows the node card in its place, with the same options; a click anywhere outside the card brings the compact view back. Options: `node`, `title` (the header's, over several nodes; else the node's), `zoom`, `show_title`, `show_subtitle`, `language`, and those of the node card for the zoomed view (`show_vms`, `show_containers`, `show_storage`, `show_stopped`, `show_history`, `show_actions`, `max_items`, `collapsed`), which can be set on the mini card too, in YAML or in its visual editor.
 
 ### Virtual machine or container card
 
@@ -137,6 +140,7 @@ guest: 102          # a VMID; guests: [100, 202] stacks several machines
 |---|---|---|
 | `guest` / `guests` | — | The machine (its VMID, or its name), or a list of them |
 | `show_network` | `true` | Download and upload of the machine |
+| `show_history` | `true` | `false`: the CPU and RAM gauges without their 24-hour curves (no history is fetched) |
 | `show_actions` | `true` | The buttons that fit its status (administrators only) |
 | `title` | the machine's name | The header's title (with a single machine) |
 | `show_title` | `true` | The machine's name in the header |
@@ -168,7 +172,7 @@ One line per machine: CPU and RAM bars while it runs, else its status and a quic
 
 ## How it works
 
-The Proxmox VE integration creates one device per node, virtual machine, container and storage. The panel's integration reads the device and entity registries and tells the panel which entity is which: each device is recognized by its identifier (`<entry>_node_<id>`, `<entry>_vm_<vmid>`, `<entry>_container_<vmid>`, `<entry>_storage_<name>`), and each entity by the end of its unique ID (`node_cpu`, `vm_memory`, `start`, `snapshot_create`…), so renamed entities and entity IDs in another language are supported. Disabled entities are reported too, which is how the Backups tab knows that the backup sensors are off.
+The Proxmox VE integration creates one device per node, virtual machine, container and storage. The panel's integration reads the device and entity registries and tells the panel which entity is which: each device is recognized by its identifier (`<entry>_node_<id>`, `<entry>_vm_<vmid>`, `<entry>_container_<vmid>`, `<entry>_storage_<name>`), and each entity by the end of its unique ID (`node_cpu`, `vm_memory`, `start`, `snapshot_create`…), so renamed entities and entity IDs in another language are supported. The custom Proxmox VE integration is read the same way, from its own identifiers (`<entry>_NODE_<node>`, `<entry>_QEMU_<vmid>`, `<entry>_LXC_<vmid>`, `<entry>_STORAGE_<name>`) and description keys (`cpu`, `memory_used_perc`, `status_raw`, `startall`…; `<entry>_backup_<node>_finished` for the last backup). Disabled entities are reported too, which is how the Backups tab knows that the backup sensors are off.
 
 The cards get the same inventory from a command every user may call (`proxmox_panel/cards`), kept 5 minutes for every card of the page: it names the entities, whose values any user can already read in their states.
 

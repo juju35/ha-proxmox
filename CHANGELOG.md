@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 - 2026-11-14
+
+### Features
+- **24 h history as an option** ([#11](https://github.com/juju35/ha-proxmox/issues/11), suggested by @mielikki33): `show_history: false` (also in the visual editors) draws the CPU and RAM gauges of the cards without their 24-hour curves, and fetches no history. In the panel, the **Show 24 h history** setting does the same for the nodes' rings.
+- **Custom Proxmox VE integration** ([#12](https://github.com/juju35/ha-proxmox/issues/12), reported by @scmsohel): the panel and the cards also read the custom [Proxmox VE](https://github.com/dougiteixeira/proxmoxve) integration (same `proxmoxve` domain), whose identifiers are in upper case (`NODE`, `QEMU`, `LXC`, `STORAGE`) and whose entities have their own keys: CPU, RAM, disk, uptime, status, network, storage usage, the node and machine buttons and the last backup of a node are found. The built-in integration is read as before.
+
 ## 1.1.1 - 2026-11-14
 
 ### Fixes

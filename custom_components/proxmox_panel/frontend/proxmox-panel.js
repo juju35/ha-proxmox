@@ -49,7 +49,7 @@ import {
   PROXMOX_VARS,
 } from "./proxmox-common.js";
 
-export const PROXMOX_PANEL_VERSION = "1.1.1";
+export const PROXMOX_PANEL_VERSION = "1.2.0";
 const PROXMOX_PANEL_TABS = ["nodes", "vms", "containers", "storage", "backups", "settings"];
 
 export class ProxmoxPanel extends HTMLElement {
@@ -259,6 +259,7 @@ export class ProxmoxPanel extends HTMLElement {
 
   /** The 24 h history of the nodes' CPU and RAM, for the curves behind their rings. */
   async _loadHistory() {
+    if (this._settings?.show_history === false) return;
     const ids = this._items("node").flatMap((n) => [n.entities.cpu, n.entities.memory_pct]).filter(Boolean);
     const history = await proxmoxHistory(this._hass, ids);
     if (!Object.keys(history).length) return; // no recorder, or no history yet: the rings alone
@@ -511,7 +512,7 @@ export class ProxmoxPanel extends HTMLElement {
   // ── Nodes tab ──
 
   _ringHtml(label, pct, color, sub, historyId) {
-    return proxmoxRing(label, pct, color, sub, this._history[historyId] || []);
+    return proxmoxRing(label, pct, color, sub, this._settings?.show_history === false ? [] : this._history[historyId] || []);
   }
 
   _nodesHtml() {
@@ -752,6 +753,7 @@ export class ProxmoxPanel extends HTMLElement {
         ${toggle("show_stopped", "s_show_stopped")}
         ${toggle("confirm_actions", "s_confirm")}
         ${toggle("hide_inactive_storage", "s_hide_storage")}
+        ${toggle("show_history", "s_show_history")}
         <div class="bar-save"><button class="act" data-action="save"${changed ? "" : " disabled"}>${esc(this._t("save"))}</button>
           ${this._saved ? `<span class="note good" role="status">${esc(this._t("saved"))}</span>` : ""}</div></div>`;
   }
@@ -777,6 +779,8 @@ export class ProxmoxPanel extends HTMLElement {
         if (this._inv) this._inv.settings = res.settings;
         this._draft = {};
         this._saved = true;
+        // The curves behind the rings, shown again: their history, loaded now
+        if (res.settings.show_history !== false && !Object.keys(this._history).length) this._loadHistory();
       }
     } catch (err) {
       this._message = { tone: "bad", tab: "settings", text: this._t("error", { error: err?.message || err }) };

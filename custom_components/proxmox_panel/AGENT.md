@@ -29,4 +29,5 @@ custom_components/proxmox_panel/
 - Every key of PROXMOX_PANEL_EN (proxmox-common.js) must be in each frontend/i18n file with the same placeholders (tests check it).
 - Card actions are shown to administrators only; the panel and its commands are administrators only.
 - The panel only presses `button.*` entities of the proxmoxve integration; never talk to Proxmox directly.
-- When proxmoxve changes its description keys or identifiers, update SLOTS / parse_identifier and the tests.
+- When proxmoxve changes its description keys or identifiers, update SLOTS / parse_identifier and the tests; the custom
+  Proxmox VE integration (dougiteixeira/proxmoxve, same domain) has its own: CUSTOM_KINDS / CUSTOM_SLOTS / CUSTOM_BACKUP_SLOTS.
