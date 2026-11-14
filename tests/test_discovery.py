@@ -35,18 +35,18 @@ def _entity(hass, entry, device, domain, unique, disabled=False):
 
 
 def test_parse_identifier():
-    assert parse_identifier("abc", "abc_node_node/pve1") == ("node", "node/pve1")
-    assert parse_identifier("abc", "abc_vm_100") == ("vm", "100")
-    assert parse_identifier("abc", "abc_container_200") == ("container", "200")
-    assert parse_identifier("abc", "abc_storage_local-lvm") == ("storage", "local-lvm")
+    assert parse_identifier("abc", "abc_node_node/pve1") == ("node", "node/pve1", False)
+    assert parse_identifier("abc", "abc_vm_100") == ("vm", "100", False)
+    assert parse_identifier("abc", "abc_container_200") == ("container", "200", False)
+    assert parse_identifier("abc", "abc_storage_local-lvm") == ("storage", "local-lvm", False)
     assert parse_identifier("abc", "other_vm_100") is None
     assert parse_identifier("abc", "abc_disk_1") is None
     assert parse_identifier("abc", "abc_vm") is None
     # The custom Proxmox VE integration: kinds in upper case (#12)
-    assert parse_identifier("abc", "abc_NODE_pve") == ("node", "pve")
-    assert parse_identifier("abc", "abc_QEMU_100") == ("vm", "100")
-    assert parse_identifier("abc", "abc_LXC_200") == ("container", "200")
-    assert parse_identifier("abc", "abc_STORAGE_local-lvm") == ("storage", "local-lvm")
+    assert parse_identifier("abc", "abc_NODE_pve") == ("node", "pve", True)
+    assert parse_identifier("abc", "abc_QEMU_100") == ("vm", "100", True)
+    assert parse_identifier("abc", "abc_LXC_200") == ("container", "200", True)
+    assert parse_identifier("abc", "abc_STORAGE_local-lvm") == ("storage", "local-lvm", True)
     assert parse_identifier("abc", "abc_DISK_pve_sda") is None
 
 

@@ -218,14 +218,9 @@ class Inventory:
         return asdict(self)
 
 
-def parse_identifier(entry_id: str, identifier: str) -> tuple[str, str] | None:
-    """(kind, key) of a proxmoxve device identifier of this entry, or None (core or custom integration)."""
-    parsed = _parse(entry_id, identifier)
-    return parsed[:2] if parsed else None
-
-
-def _parse(entry_id: str, identifier: str) -> tuple[str, str, bool] | None:
-    """(kind, key, custom) of a proxmoxve device identifier of this entry, or None."""
+def parse_identifier(entry_id: str, identifier: str) -> tuple[str, str, bool] | None:
+    """(kind, key, custom) of a proxmoxve device identifier of this entry, or None: custom is True for the custom
+    integration's upper-case kinds."""
     prefix = f"{entry_id}_"
     if not identifier.startswith(prefix):
         return None
@@ -293,7 +288,7 @@ def async_inventory(hass: HomeAssistant) -> Inventory:
                 (
                     p
                     for domain, identifier in device.identifiers
-                    if domain == PROXMOX_DOMAIN and (p := _parse(entry.entry_id, identifier))
+                    if domain == PROXMOX_DOMAIN and (p := parse_identifier(entry.entry_id, identifier))
                 ),
                 None,
             )
