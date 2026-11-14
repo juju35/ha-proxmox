@@ -40,7 +40,7 @@ import {
   proxmoxUptime,
 } from "./proxmox-common.js";
 
-export const PROXMOX_CARDS_VERSION = "1.1.1";
+export const PROXMOX_CARDS_VERSION = "1.2.0";
 const LANGUAGE_NAMES = {
   en: "English", fr: "Français", de: "Deutsch", es: "Español", sr: "Српски", "sr-Latn": "Srpski (latinica)", it: "Italiano",
   nl: "Nederlands", pt: "Português", pl: "Polski", ro: "Română", da: "Dansk", sv: "Svenska", bg: "Български", ru: "Русский",
@@ -289,6 +289,7 @@ class ProxmoxBaseCard extends HTMLElement {
   }
 
   async _loadHistory() {
+    if (this._config?.show_history === false) return;
     if (this._historyAt && Date.now() - this._historyAt < INVENTORY_TTL) return;
     this._historyAt = Date.now();
     const history = await proxmoxHistory(this._hass, this._historyIds());
@@ -407,7 +408,7 @@ class ProxmoxBaseCard extends HTMLElement {
     const c = 2 * Math.PI * r;
     const label = this._t(metric);
     const shown = pct === null ? "—" : `${Math.round(pct)}%`;
-    return `<div class="gauge ${gaugeLevel(metric, pct)}"${entity ? ` data-action="more-info" data-entity="${esc(entity)}" role="button" tabindex="0"` : ""}>${gaugeCurve(points)}
+    return `<div class="gauge ${gaugeLevel(metric, pct)}"${entity ? ` data-action="more-info" data-entity="${esc(entity)}" role="button" tabindex="0"` : ""}>${this._config.show_history === false ? "" : gaugeCurve(points)}
       <div class="dial"><svg class="ring" viewBox="0 0 60 60" role="img" aria-label="${esc(`${label} ${shown}`)}"><circle class="track" cx="30" cy="30" r="${r}"/>
         <circle class="value" cx="30" cy="30" r="${r}" stroke-dasharray="${((v / 100) * c).toFixed(1)} ${c.toFixed(1)}"/></svg>
         <div class="val">${icon(metric)}<b>${shown}</b></div></div>
@@ -976,7 +977,7 @@ class ProxmoxEditorBase extends HTMLElement {
 
 class ProxmoxCardEditor extends ProxmoxEditorBase {
   static get toggles() {
-    return ["show_vms", "show_containers", "show_storage", "show_stopped", "show_actions", "show_title", "show_subtitle"];
+    return ["show_vms", "show_containers", "show_storage", "show_stopped", "show_history", "show_actions", "show_title", "show_subtitle"];
   }
 
   static get defaults() {
@@ -1022,7 +1023,7 @@ class ProxmoxMiniCardEditor extends ProxmoxCardEditor {
 
 class ProxmoxGuestCardEditor extends ProxmoxEditorBase {
   static get toggles() {
-    return ["show_network", "show_actions", "show_title", "show_subtitle"];
+    return ["show_network", "show_history", "show_actions", "show_title", "show_subtitle"];
   }
 
   _fields() {
@@ -1052,7 +1053,7 @@ class ProxmoxGuestCardEditor extends ProxmoxEditorBase {
 
 class ProxmoxGuestMiniCardEditor extends ProxmoxGuestCardEditor {
   static get toggles() {
-    return ["zoom", "show_network", "show_actions", "show_title", "show_subtitle"];
+    return ["zoom", "show_network", "show_history", "show_actions", "show_title", "show_subtitle"];
   }
 }
 

@@ -1,7 +1,7 @@
 """Constants for the Proxmox Panel integration."""
 
 DOMAIN = "proxmox_panel"
-VERSION = "1.1.1"
+VERSION = "1.2.0"
 
 # The core Proxmox VE integration, whose devices and entities the panel shows
 PROXMOX_DOMAIN = "proxmoxve"
@@ -25,8 +25,10 @@ ICONS_URL = f"{URL_BASE}/proxmox-icons.js"
 CONF_SHOW_STOPPED = "show_stopped"
 CONF_CONFIRM_ACTIONS = "confirm_actions"
 CONF_HIDE_INACTIVE_STORAGE = "hide_inactive_storage"
+CONF_SHOW_HISTORY = "show_history"
 DEFAULTS = {
     CONF_SHOW_STOPPED: True,
     CONF_CONFIRM_ACTIONS: True,
     CONF_HIDE_INACTIVE_STORAGE: False,
+    CONF_SHOW_HISTORY: True,
 }

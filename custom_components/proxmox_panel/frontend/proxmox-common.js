@@ -100,6 +100,8 @@ export const PROXMOX_PANEL_EN = {
   s_confirm_hint: "Stop, shut down, reset, restart, hibernate and the node-wide actions.",
   s_hide_storage: "Hide inactive storage",
   s_hide_storage_hint: "Storage that is disabled or not active.",
+  s_show_history: "Show 24 h history",
+  s_show_history_hint: "The curves behind the CPU and RAM rings of the nodes.",
   save: "Save",
   saved: "Saved.",
   // Cards
@@ -123,6 +125,7 @@ export const PROXMOX_PANEL_EN = {
   e_show_stopped: "Stopped machines",
   e_show_actions: "Actions (administrators)",
   e_show_network: "Network",
+  e_show_history: "Show 24 h history",
   e_show_title: "Title",
   e_show_subtitle: "Subtitle",
   e_zoom: "Button to the full card",
