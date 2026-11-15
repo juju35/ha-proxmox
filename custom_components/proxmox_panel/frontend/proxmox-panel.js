@@ -43,14 +43,17 @@ import {
   proxmoxAgo,
   proxmoxFind,
   proxmoxHistory,
+  proxmoxHealthBand,
   proxmoxRing,
   PROXMOX_COLORS,
   PROXMOX_SHARED_STYLE,
   PROXMOX_VARS,
 } from "./proxmox-common.js";
 
-export const PROXMOX_PANEL_VERSION = "1.2.0";
-const PROXMOX_PANEL_TABS = ["nodes", "vms", "containers", "storage", "backups", "settings"];
+export const PROXMOX_PANEL_VERSION = "1.3.0";
+// Disks and Datastores come from Proxmox Extended Sensors: shown only when it offers them (juju35/ha-proxmox#14).
+const PROXMOX_PANEL_TABS = ["nodes", "vms", "containers", "storage", "backups", "disks", "datastores", "settings"];
+const PROXMOX_PANEL_SENSOR_TABS = { disks: "disk", datastores: "pbs" };
 
 export class ProxmoxPanel extends HTMLElement {
   static STYLE = `${PROXMOX_SHARED_STYLE}
@@ -223,7 +226,7 @@ export class ProxmoxPanel extends HTMLElement {
     this._unsub = this._hass.connection
       .subscribeMessage(
         (events) => {
-          if ([].concat(events || []).some((ev) => ev?.entry?.domain === "proxmoxve")) this._load();
+          if ([].concat(events || []).some((ev) => ev?.entry?.domain === "proxmoxve" || ev?.entry?.domain === "proxmox_sensors")) this._load();
         },
         { type: "config_entries/subscribe" },
       )
@@ -339,7 +342,8 @@ export class ProxmoxPanel extends HTMLElement {
   // ── Tabs ──
 
   _tabs() {
-    return PROXMOX_PANEL_TABS;
+    // Disks and Datastores only when Proxmox Extended Sensors offers them
+    return PROXMOX_PANEL_TABS.filter((tab) => !(tab in PROXMOX_PANEL_SENSOR_TABS) || this._items(PROXMOX_PANEL_SENSOR_TABS[tab]).length);
   }
 
   _goTab(tab, focus) {
@@ -506,6 +510,8 @@ export class ProxmoxPanel extends HTMLElement {
     if (tab === "containers") return this._guestsHtml("container", "containers");
     if (tab === "storage") return this._storageHtml();
     if (tab === "backups") return this._backupsHtml();
+    if (tab === "disks") return this._disksHtml();
+    if (tab === "datastores") return this._datastoresHtml();
     return "";
   }
 
@@ -537,7 +543,7 @@ export class ProxmoxPanel extends HTMLElement {
       const memPct = this._num(e.memory_pct) ?? (mem !== null && maxMem ? (mem / maxMem) * 100 : null);
       const disk = this._bytes(e.disk);
       const maxDisk = this._bytes(e.max_disk);
-      const diskPct = disk !== null && maxDisk ? (disk / maxDisk) * 100 : null;
+      const diskPct = this._num(e.disk_pct) ?? (disk !== null && maxDisk ? (disk / maxDisk) * 100 : null);
       const of = (a, b) => (a !== null && b !== null ? this._t("of", { used: proxmoxPanelBytes(a, lang), total: proxmoxPanelBytes(b, lang) }) : "");
       const count = (kind) => {
         const list = this._items(kind).filter((g) => g.node === node.id);
@@ -562,6 +568,7 @@ export class ProxmoxPanel extends HTMLElement {
             ${this._ringHtml(this._t("ram"), memPct, PROXMOX_COLORS.ram, of(mem, maxMem), e.memory_pct)}
             ${this._ringHtml(this._t("disk"), diskPct, PROXMOX_COLORS.disk, of(disk, maxDisk), null)}
           </div>
+          ${proxmoxHealthBand(this._hass, lang, node)}
           <div class="m">${vms.n ? `<span>${proxmoxPanelIcon("vm")}${esc(this._t("vms_running", vms))}</span>` : ""}${cts.n ? `<span>${proxmoxPanelIcon("container")}${esc(this._t("containers_running", cts))}</span>` : ""}</div>
           ${actions ? `<div class="acts">${actions}</div>` : ""}
         </div>`;
@@ -697,6 +704,65 @@ export class ProxmoxPanel extends HTMLElement {
         <div class="head"><span class="sum">${esc(this._t("sum_storage", { n: list.length }))}</span></div>
         ${this._notesHtml("storage")}
         <div class="list">${rows.length ? rows.join("") : `<div class="note">${esc(this._t("empty_storage"))}</div>`}</div></div>`;
+  }
+
+  // ── Disks tab (Proxmox Extended Sensors) ──
+
+  _disksHtml() {
+    const esc = proxmoxPanelEsc;
+    const lang = this._lang();
+    const disks = this._items("disk");
+    const several = this._items("node").length > 1;
+    const rows = disks.map((d) => {
+      const e = d.entities;
+      const health = this._state(e.health)?.state;
+      const tone = health ? (/fail|error|bad/i.test(health) ? "bad" : /ok|pass|healthy/i.test(health) ? "good" : "") : "";
+      const temp = this._num(e.temperature);
+      const wear = this._num(e.wearout);
+      const power = this._num(e.power_on);
+      const node = several ? ` <span class="id">· ${esc(this._nodeName(d.node))}</span>` : "";
+      const facts = [
+        temp !== null ? `<span>${proxmoxPanelIcon("temp")}${Math.round(temp)} °C</span>` : "",
+        wear !== null ? `<span>${esc(this._t("d_wearout"))} ${Math.round(wear)} %</span>` : "",
+        power !== null ? `<span>${esc(this._t("d_power_on", { d: proxmoxPanelDuration(power * 3600, lang) }))}</span>` : "",
+      ].join("");
+      const pill = health ? `<span class="pill ${tone}">${esc(health)}</span>` : "";
+      return `<div class="srow"><div class="line">${proxmoxPanelIcon("harddisk")}<span class="n" style="flex:1">${esc(d.name)}${node}</span>${pill}</div>
+          ${facts ? `<div class="m">${facts}</div>` : ""}</div>`;
+    });
+    return `<div class="box">${this._notesHtml("disks")}
+        <div class="list">${rows.length ? rows.join("") : `<div class="note">${esc(this._t("empty_disks"))}</div>`}</div></div>`;
+  }
+
+  // ── Datastores tab (Proxmox Backup Server, Proxmox Extended Sensors) ──
+
+  _datastoresHtml() {
+    const esc = proxmoxPanelEsc;
+    const list = this._items("pbs");
+    const pill = (e, slot, label) => {
+      const s = this._state(e[slot])?.state;
+      if (!s) return "";
+      const tone = /fail|error/i.test(s) ? "bad" : /ok|done|finished|success|valid/i.test(s) ? "good" : "";
+      return `<span class="pill ${tone}">${esc(this._t(label))}: ${esc(s)}</span>`;
+    };
+    const rows = list.map((p) => {
+      const e = p.entities;
+      const pct = this._num(e.used_pct);
+      const color = pct === null ? "transparent" : pct >= 90 ? "var(--tone-bad)" : pct >= 75 ? "var(--tone-warn)" : "var(--tone-good)";
+      const dedup = this._state(e.dedup)?.state;
+      const last = this._state(e.last_backup);
+      const time = last ? Date.parse(last.state) : Number.NaN;
+      const pills = [pill(e, "gc_status", "pbs_gc"), pill(e, "prune_status", "pbs_prune"), pill(e, "verify_status", "pbs_verify")].join("");
+      const facts = [
+        Number.isFinite(time) ? `<span>${esc(this._t("pbs_backup", { when: this._ago(time) }))}</span>` : "",
+        dedup ? `<span>${esc(this._t("pbs_dedup", { v: dedup }))}</span>` : "",
+      ].join("");
+      return `<div class="srow"><div class="line">${proxmoxPanelIcon("server")}<span class="n" style="flex:1">${esc(p.name)}</span><span class="pct">${pct === null ? "" : this._pct(pct)}</span></div>
+          ${pct === null ? "" : `<div class="bar"><i style="width:${Math.max(0, Math.min(100, pct)).toFixed(1)}%;background:${color}"></i></div>`}
+          ${pills ? `<div class="acts">${pills}</div>` : ""}${facts ? `<div class="m">${facts}</div>` : ""}</div>`;
+    });
+    return `<div class="box">${this._notesHtml("datastores")}
+        <div class="list">${rows.length ? rows.join("") : `<div class="note">${esc(this._t("empty_datastores"))}</div>`}</div></div>`;
   }
 
   // ── Backups tab ──

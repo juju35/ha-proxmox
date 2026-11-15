@@ -20,6 +20,7 @@ its own (``CUSTOM_SLOTS``); the backup entities of a node are ``<entry>_backup_<
 
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -28,7 +29,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
-from .const import PROXMOX_DOMAIN
+from .const import PROXMOX_DOMAIN, PROXMOX_SENSORS_DOMAIN
 
 # Per kind of device and entity domain: the description keys of the proxmoxve integration and the panel's slot for
 # each. A key is matched as the end of the unique id, the longest first (``vm_status`` before ``status``).
@@ -187,6 +188,145 @@ CUSTOM_BACKUP_SLOTS = {
     "binary_sensor": {"status": "backup_problem"},
 }
 
+# ── Proxmox Extended Sensors (proxmox_sensors, juju35/ha-proxmox#14) ──
+#
+# A separate integration (domain ``proxmox_sensors``), read the same way but from its own devices and entities. The
+# resource is in the device identifier; the metric is in the entity's translation key (its unique ids embed a per-entry
+# UUID and are not predictable, but the translation keys are stable). It adds the node's temperature and health, the
+# physical disks (SMART) and the Proxmox Backup Server datastores, which the Proxmox VE integration has no equivalent
+# for. Guests and storages carry ``via_device_id`` to their node, as the Proxmox VE devices do.
+
+# Device identifier → kind. Guests end with the vmid and ``_v1``; the others are known prefixes.
+_SENSORS_GUEST = re.compile(r"^proxmox_(vm|ct)_.+_(\d+)_v1$")
+_SENSORS_PREFIXES: tuple[tuple[str, str], ...] = (
+    ("proxmox_physical_disk_v2_", "disk"),
+    ("proxmox_disks_group_", "disk"),
+    ("proxmox_storage_", "storage"),
+    ("proxmox_node_", "node"),
+    ("pbs_datastore:", "pbs"),
+    ("pbs_maintenance:", "pbs"),
+    ("datastore_", "pbs"),
+    ("maintenance_", "pbs"),
+)
+
+# Per kind and entity domain: the proxmox_sensors translation key of each entity and the panel's slot for it.
+_SENSORS_GUEST_BUTTONS = {
+    f"{{kind}}_{command}": "restart" if command == "reboot" else command
+    for command in ("start", "shutdown", "stop", "reboot", "reset", "pause", "hibernate", "resume")
+}
+SENSORS_SLOTS: dict[str, dict[str, dict[str, str]]] = {
+    "node": {
+        "sensor": {
+            "node_cpu": "cpu",
+            "node_memory_usage": "memory_pct",
+            "node_rootfs_usage": "disk_pct",
+            "node_uptime": "uptime",
+            "node_load_average": "load",
+            "node_network_rx": "netin",
+            "node_network_tx": "netout",
+            "cpu_temperature": "temperature",
+            "node_score": "health_score",
+            "node_iowait": "io_wait",
+            "node_updates": "updates",
+        },
+        "binary_sensor": {
+            "node_overloaded": "overloaded",
+            "node_disk_overloaded": "disk_overloaded",
+            "node_stressed": "stressed",
+        },
+    },
+    "vm": {
+        "sensor": {
+            "vm_status": "status",
+            "vm_cpu_usage": "cpu",
+            "vm_memory_used": "memory",
+            "vm_memory_total": "max_memory",
+            "vm_disk_usage": "disk_pct",
+            "vm_disk_total": "max_disk",
+            "vm_uptime": "uptime",
+            "vm_network_rx": "netin",
+            "vm_network_tx": "netout",
+        },
+        "button": {key.format(kind="vm"): slot for key, slot in _SENSORS_GUEST_BUTTONS.items()},
+    },
+    "container": {
+        "sensor": {
+            "ct_status": "status",
+            "ct_cpu_usage": "cpu",
+            "ct_memory_used": "memory",
+            "ct_memory_total": "max_memory",
+            "ct_disk_used": "disk",
+            "ct_disk_total": "max_disk",
+            "ct_uptime": "uptime",
+            "ct_network_rx": "netin",
+            "ct_network_tx": "netout",
+        },
+        "button": {
+            key.format(kind="ct"): slot
+            for key, slot in _SENSORS_GUEST_BUTTONS.items()
+            if key.split("_", 1)[1] in ("start", "shutdown", "stop", "reboot")
+        },
+    },
+    "storage": {
+        "sensor": {
+            "storage_usage": "used_pct",
+            "storage_used": "used",
+            "storage_total": "total",
+            "storage_free": "available",
+        },
+    },
+    "disk": {
+        "sensor": {
+            "disk_size": "size",
+            "disk_smart_status": "health",
+            "disk_temperature_c": "temperature",
+            "hw_nvme_temperature": "temperature",
+            "disk_percentage_used": "wearout",
+            "disk_available_spare": "spare",
+            "disk_power_on_hours": "power_on",
+            "zfs_health": "zfs_health",
+        },
+    },
+    "pbs": {
+        "sensor": {
+            "pbs_datastore_usage": "used_pct",
+            "pbs_dedup": "dedup",
+            "pbs_gc_status": "gc_status",
+            "pbs_prune_status": "prune_status",
+            "pbs_verify_status": "verify_status",
+            "pbs_last_backup_time": "last_backup",
+            "pbs_last_backup_status": "backup_status",
+            "pbs_last_backup_size": "backup_size",
+        },
+    },
+}
+
+# The sorting prefixes the integration adds to device names ("1. Node: pve1", "2. SSD Samsung 1 TB", "Datastore: x").
+_SENSORS_NAME_PREFIX = re.compile(r"^(?:\d+\.\s*)?(?:Node:\s*)?")
+
+
+def parse_sensors_identifier(identifier: str) -> tuple[str, str] | None:
+    """(kind, key) of a proxmox_sensors device identifier, or None. The key is the vmid for a guest, else the
+    identifier itself (only the kind and the device's own name are shown for nodes, disks, storages and datastores)."""
+    if match := _SENSORS_GUEST.match(identifier):
+        return ("vm" if match.group(1) == "vm" else "container", match.group(2))
+    for prefix, kind in _SENSORS_PREFIXES:
+        if identifier.startswith(prefix):
+            return kind, identifier
+    return None
+
+
+def sensors_slot_of(kind: str, domain: str, translation_key: str | None) -> str | None:
+    """The panel's slot for a proxmox_sensors entity, from its translation key."""
+    if not translation_key:
+        return None
+    return SENSORS_SLOTS.get(kind, {}).get(domain, {}).get(translation_key)
+
+
+def _clean_sensors_name(name: str) -> str:
+    """A device name without the number the integration prefixes for sorting ("1. Node: pve1" → "pve1")."""
+    return _SENSORS_NAME_PREFIX.sub("", name).strip() or name
+
 
 @dataclass
 class Item:
@@ -199,6 +339,7 @@ class Item:
     key: str  # node id, vmid or storage name, as in the device identifier
     node: str | None = None  # device id of the node it belongs to
     url: str | None = None
+    source: str = "proxmoxve"  # "proxmoxve" or "sensors" (Proxmox Extended Sensors)
     entities: dict[str, str] = field(default_factory=dict)
     disabled: list[str] = field(default_factory=list)
 
@@ -213,9 +354,15 @@ class Inventory:
     vm: list[Item] = field(default_factory=list)
     container: list[Item] = field(default_factory=list)
     storage: list[Item] = field(default_factory=list)
+    disk: list[Item] = field(default_factory=list)  # physical disks (Proxmox Extended Sensors)
+    pbs: list[Item] = field(default_factory=list)  # Proxmox Backup Server datastores
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+# Every list the inventory sorts and the frontend reads (guests and storages are grouped under their node).
+INVENTORY_KINDS = ("node", "vm", "container", "storage", "disk", "pbs")
 
 
 def parse_identifier(entry_id: str, identifier: str) -> tuple[str, str, bool] | None:
@@ -266,9 +413,62 @@ def _sort_key(item: Item) -> tuple:
     return (1, 0, item.name.lower())
 
 
+def _add_sensors_inventory(hass: HomeAssistant, inventory: Inventory, devices, entities) -> None:
+    """Add the devices and entities of every Proxmox Extended Sensors entry (juju35/ha-proxmox#14)."""
+    for entry in hass.config_entries.async_entries(PROXMOX_SENSORS_DOMAIN):
+        inventory.configured = True
+        inventory.entries.append(
+            {
+                "entry_id": entry.entry_id,
+                "title": entry.title,
+                "state": entry.state.value,
+                "loaded": entry.state is ConfigEntryState.LOADED,
+                "source": "sensors",
+            }
+        )
+        for device in dr.async_entries_for_config_entry(devices, entry.entry_id):
+            parsed = next(
+                (
+                    p
+                    for domain, identifier in device.identifiers
+                    if domain == PROXMOX_SENSORS_DOMAIN and (p := parse_sensors_identifier(identifier))
+                ),
+                None,
+            )
+            if parsed is None:
+                continue
+            kind, key = parsed
+            name = _clean_sensors_name(device.name_by_user or device.name or key)
+            item = Item(
+                id=device.id,
+                kind=kind,
+                name=name,
+                entry_id=entry.entry_id,
+                key=key if kind in ("vm", "container") else name,
+                node=device.via_device_id,
+                url=device.configuration_url,
+                source="sensors",
+            )
+            for ent in er.async_entries_for_device(entities, device.id, include_disabled_entities=True):
+                if ent.platform != PROXMOX_SENSORS_DOMAIN:
+                    continue
+                slot = sensors_slot_of(kind, ent.domain, ent.translation_key)
+                if slot is None:
+                    continue
+                if ent.disabled_by is not None:
+                    item.disabled.append(slot)
+                else:
+                    item.entities[slot] = ent.entity_id
+            getattr(inventory, kind).append(item)
+
+
 @callback
 def async_inventory(hass: HomeAssistant) -> Inventory:
-    """The nodes, virtual machines, containers and storages of every Proxmox VE entry, with their entities."""
+    """The nodes, machines, containers, storages, disks and backups of every Proxmox entry, with their entities.
+
+    Three integrations are read the same way: the built-in Proxmox VE, the custom Proxmox VE (same ``proxmoxve``
+    domain, upper-case identifiers) and Proxmox Extended Sensors (``proxmox_sensors``, from its translation keys).
+    """
     inventory = Inventory()
     entries = hass.config_entries.async_entries(PROXMOX_DOMAIN)
     inventory.configured = bool(entries)
@@ -319,7 +519,8 @@ def async_inventory(hass: HomeAssistant) -> Inventory:
                 else:
                     item.entities[slot] = ent.entity_id
             getattr(inventory, kind).append(item)
-    for kind in KINDS:
+    _add_sensors_inventory(hass, inventory, devices, entities)
+    for kind in INVENTORY_KINDS:
         getattr(inventory, kind).sort(key=_sort_key)
         for item in getattr(inventory, kind):
             item.disabled.sort()

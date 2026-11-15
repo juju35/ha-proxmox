@@ -104,6 +104,25 @@ export const PROXMOX_PANEL_EN = {
   s_show_history_hint: "The curves behind the CPU and RAM rings of the nodes.",
   save: "Save",
   saved: "Saved.",
+  // Proxmox Extended Sensors: the node's health band, the physical disks and the PBS datastores
+  disks: "Disks",
+  datastores: "Datastores",
+  empty_disks: "No disk.",
+  empty_datastores: "No datastore.",
+  h_temperature: "Temp",
+  h_score: "Score",
+  h_iowait: "IO wait",
+  h_healthy: "Healthy",
+  h_overloaded: "Overloaded",
+  h_disk_pressure: "Disk pressure",
+  h_stressed: "Stressed",
+  d_wearout: "Wear",
+  d_power_on: "Power-on: {d}",
+  pbs_dedup: "Dedup: {v}",
+  pbs_gc: "GC",
+  pbs_prune: "Prune",
+  pbs_verify: "Verify",
+  pbs_backup: "Last backup: {when}",
   // Cards
   c_no_integration: "Add the Proxmox Panel integration: the Proxmox cards read the Proxmox VE integration through it.",
   c_no_node: "No Proxmox VE node found.",
@@ -169,6 +188,10 @@ export const PROXMOX_PANEL_ICONS = {
   ram: "M17,17H7V7H17M21,11V9H19V7C19,5.89 18.1,5 17,5H15V3H13V5H11V3H9V5H7C5.89,5 5,5.89 5,7V9H3V11H5V13H3V15H5V17A2,2 0 0,0 7,19H9V21H11V19H13V21H15V19H17A2,2 0 0,0 19,17V15H21V13H19V11M13,13H11V11H13M15,9H9V15H15V9Z",
   disk: "M6,2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M12,4A6,6 0 0,0 6,10C6,13.31 8.69,16 12.1,16L11.22,13.77C10.95,13.29 11.11,12.68 11.59,12.4L12.45,11.9C12.93,11.63 13.54,11.79 13.82,12.27L15.74,14.69C17.12,13.59 18,11.9 18,10A6,6 0 0,0 12,4M12,9A1,1 0 0,1 13,10A1,1 0 0,1 12,11A1,1 0 0,1 11,10A1,1 0 0,1 12,9M7,18A1,1 0 0,0 6,19A1,1 0 0,0 7,20A1,1 0 0,0 8,19A1,1 0 0,0 7,18M12.09,13.27L14.58,19.58L17.17,18.08L12.95,12.77L12.09,13.27Z",
   upload: "M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z",
+  // Proxmox Extended Sensors: temperature (node health band), a disk (physical disks) and a backup server (PBS)
+  temp: "M15,13V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V8H11V5A1,1 0 0,1 12,4Z",
+  harddisk: "M4,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M9,8A2,2 0 0,0 7,10A2,2 0 0,0 9,12A2,2 0 0,0 11,10A2,2 0 0,0 9,8M4,6V12H5.68C5.24,11.27 5,10.42 5,9.5A4.5,4.5 0 0,1 9.5,5C10.42,5 11.27,5.24 12,5.68V6H4M20,18V8H14.32C14.76,8.73 15,9.58 15,10.5A4.5,4.5 0 0,1 10.5,15C9.58,15 8.73,14.76 8,14.32V18H20Z",
+  server: "M4,1H20A1,1 0 0,1 21,2V6A1,1 0 0,1 20,7H4A1,1 0 0,1 3,6V2A1,1 0 0,1 4,1M4,9H20A1,1 0 0,1 21,10V14A1,1 0 0,1 20,15H4A1,1 0 0,1 3,14V10A1,1 0 0,1 4,9M4,17H20A1,1 0 0,1 21,18V22A1,1 0 0,1 20,23H4A1,1 0 0,1 3,22V18A1,1 0 0,1 4,17M9,5H10V3H9V5M9,13H10V11H9V13M9,21H10V19H9V21M5,3V5H7V3H5M5,11V13H7V11H5M5,19V21H7V19H5Z",
 };
 export const proxmoxPanelIcon = (name, cls = "i") =>
   `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${PROXMOX_PANEL_ICONS[name] || ""}"/></svg>`;
@@ -277,14 +300,54 @@ export const proxmoxUptime = (hass, id) => {
 
 export const proxmoxPct = (v) => (v === null ? "—" : `${Math.round(v)} %`);
 
-/** running, stopped, suspended or unavailable (online / offline for a node), from the status sensor, else the running binary sensor. */
+/** running, stopped, suspended or unavailable (online / offline for a node), from the status sensor, else the running
+ * binary sensor. Proxmox Extended Sensors has no node online sensor: a node with a live metric is taken as online. */
 export const proxmoxStatus = (hass, item) => {
   const status = proxmoxState(hass, item.entities.status)?.state;
-  if (status) return status;
+  if (status) return status.toLowerCase(); // Proxmox Extended Sensors capitalizes it ("Running")
   const running = proxmoxState(hass, item.entities.running)?.state;
   if (running === "on") return item.kind === "node" ? "online" : "running";
   if (running === "off") return item.kind === "node" ? "offline" : "stopped";
+  if (item.kind === "node") {
+    for (const slot of ["cpu", "memory_pct", "temperature", "health_score", "io_wait", "load"]) {
+      if (proxmoxState(hass, item.entities[slot])) return "online";
+    }
+  }
   return "unavailable";
+};
+
+/**
+ * The node's health, from the Proxmox Extended Sensors sensors (juju35/ha-proxmox#14): its temperature, its score and
+ * its IO wait, and a state from the overload binary sensors (overloaded, disk pressure or stressed, else healthy).
+ */
+export const proxmoxHealth = (hass, item) => {
+  const e = item.entities;
+  const flag = (slot) => proxmoxState(hass, e[slot])?.state === "on";
+  let tone = "good";
+  let key = "h_healthy";
+  if (flag("overloaded")) [tone, key] = ["bad", "h_overloaded"];
+  else if (flag("disk_overloaded")) [tone, key] = ["warn", "h_disk_pressure"];
+  else if (flag("stressed")) [tone, key] = ["warn", "h_stressed"];
+  return {
+    temp: proxmoxNum(hass, e.temperature),
+    score: proxmoxNum(hass, e.health_score),
+    io: proxmoxNum(hass, e.io_wait),
+    tone,
+    key,
+    has: ["temperature", "health_score", "io_wait", "overloaded", "disk_overloaded", "stressed"].some((s) => e[s]),
+  };
+};
+
+/** The node's health as a band: temperature, score, IO wait and the state pill (empty without any of them). */
+export const proxmoxHealthBand = (hass, lang, item) => {
+  const h = proxmoxHealth(hass, item);
+  if (!h.has) return "";
+  const parts = [];
+  if (h.temp !== null) parts.push(`<span>${proxmoxPanelIcon("temp")}${proxmoxPanelEsc(proxmoxT(lang, "h_temperature"))} ${Math.round(h.temp)} °C</span>`);
+  if (h.score !== null) parts.push(`<span>${proxmoxPanelEsc(proxmoxT(lang, "h_score"))} ${Math.round(h.score)}</span>`);
+  if (h.io !== null) parts.push(`<span>${proxmoxPanelEsc(proxmoxT(lang, "h_iowait"))} ${Math.round(h.io)} %</span>`);
+  parts.push(`<span class="pill ${h.tone}">${proxmoxPanelEsc(proxmoxT(lang, h.key))}</span>`);
+  return `<div class="m health">${parts.join("")}</div>`;
 };
 
 export const proxmoxStatusPill = (lang, status) => {
@@ -381,6 +444,9 @@ export const PROXMOX_SHARED_STYLE = `
   .m > span { display:inline-flex; align-items:center; gap:3px; }
   .m .i { width:14px; height:14px; }
   .m .down .i { color:var(--tone-down); } .m .up .i { color:var(--tone-up); }
+  .m.health { border-top:1px solid var(--divider-color, rgba(127,127,127,.15)); padding-top:8px; gap:4px 14px; }
+  .m.health .pill { margin-left:auto; }
+  .m.health .i { color:var(--px-accent); }
   .badge { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; flex:none; color:var(--px-accent);
            background:color-mix(in srgb, var(--px-accent) 15%, transparent); }
   .badge .i { width:22px; height:22px; }

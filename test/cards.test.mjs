@@ -231,3 +231,11 @@ test("sections: a click folds and unfolds; collapsed starts folded and a tap els
   assert.doesNotMatch(folded._card(), /local-lvm/);
   folded.disconnectedCallback();
 });
+
+test("node card shows the health band (temperature, score, state)", async () => {
+  const card = await make(cards.ProxmoxCard, {});
+  const html = card._card();
+  assert.match(html, /class="m health"/);
+  assert.match(html, /54 °C/);
+  assert.match(html, /class="pill good">Healthy</);
+});

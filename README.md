@@ -22,6 +22,7 @@ Home Assistant integration that adds a **Proxmox** panel to the sidebar and **Pr
 - **VMs** and **Containers**: one row per machine with its status, CPU, RAM and uptime, and the action that fits (start a stopped one, restart or shut down a running one, resume a suspended one); its name unfolds the details (RAM, disk, network download / upload, CPUs) and every other action that fits its status, with a link to the machine in the Proxmox web interface. Search by name or ID, filter by node
 - **Storage**: one gauge per storage (green, amber from 75 %, red from 90 %), with used, free and total space, and its active and shared state
 - **Backups**: the last backup of each node, how long it took and whether it failed, and a manual **Snapshot** of each virtual machine and container
+- **Proxmox Extended Sensors** (optional): with the [Proxmox Extended Sensors](https://github.com/Javisen/proxmox_sensors) integration installed, the nodes, machines, containers and storages are read from it too; a band under the node rings shows its temperature and health (score, IO wait, overload state); and two tabs appear — **Disks** (physical disks: SMART health, temperature, wear, power-on time) and **Datastores** (Proxmox Backup Server: usage, deduplication, last backup, GC / prune / verify status)
 - **Confirmation** before the actions that stop or restart something (stop, shut down, reset, restart, hibernate, node-wide actions), at the top of the list
 - **Settings**: stopped machines shown or not, the confirmation, inactive storage hidden
 - **Administrators only**: the panel and its commands are kept for administrators
@@ -32,10 +33,11 @@ Home Assistant integration that adds a **Proxmox** panel to the sidebar and **Pr
 
 ## Supported integrations
 
-| Integration | What it is used for |
-|---|---|
-| [Proxmox VE](https://www.home-assistant.io/integrations/proxmoxve/) (built in) | Everything the panel and the cards show: its devices (nodes, virtual machines, containers, storage), their sensors, binary sensors and update entities, and its buttons for the actions |
-| [Proxmox VE (custom)](https://github.com/dougiteixeira/proxmoxve) | The same, from the custom integration of the same `proxmoxve` domain, installed in place of the built-in one |
+| | Integration | What it is used for |
+|---|---|---|
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/.github/assets/logo-proxmox.png" alt="Proxmox" height="32"> | [Proxmox VE](https://www.home-assistant.io/integrations/proxmoxve/) (built in) | Everything the panel and the cards show: its devices (nodes, virtual machines, containers, storage), their sensors, binary sensors and update entities, and its buttons for the actions |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/.github/assets/logo-proxmox.png" alt="Proxmox" height="32"> | [Proxmox VE (custom)](https://github.com/dougiteixeira/proxmoxve) | The same, from the custom integration of the same `proxmoxve` domain, installed in place of the built-in one |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/.github/assets/logo-proxmox-sensors.png" alt="Proxmox Extended Sensors" height="32"> | [Proxmox Extended Sensors](https://github.com/Javisen/proxmox_sensors) | Its nodes, virtual machines, containers and storages, with the guests' start, stop, reboot, shut down, pause, hibernate, reset and resume buttons — and the node's temperature and health, the physical disks (SMART) and the Proxmox Backup Server datastores, which the Proxmox VE integration has no equivalent for |
 
 ## Prerequisites
 
@@ -79,6 +81,8 @@ The **Proxmox** entry of the sidebar, at `/proxmox` (each tab has its own addres
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-confirm.png" alt="Confirmation of an action" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-confirm-dark.png" alt="Confirmation of an action dark" width="400"> |
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-storage.png" alt="Storage tab" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-storage-dark.png" alt="Storage tab dark" width="400"> |
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-backups.png" alt="Backups tab" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-backups-dark.png" alt="Backups tab dark" width="400"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-disks.png" alt="Disks tab (Proxmox Extended Sensors)" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-disks-dark.png" alt="Disks tab dark" width="400"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-datastores.png" alt="Datastores tab (Proxmox Backup Server)" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-datastores-dark.png" alt="Datastores tab dark" width="400"> |
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-settings.png" alt="Settings tab" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/panel-settings-dark.png" alt="Settings tab dark" width="400"> |
 
 ### Settings
@@ -231,7 +235,7 @@ Contributions for additional languages are welcome!
 
 ## Trademark
 
-Proxmox® is a registered trademark of Proxmox Server Solutions GmbH. This project is not affiliated with or endorsed by Proxmox Server Solutions GmbH; the logo is used to identify the integration it works with.
+Proxmox® is a registered trademark of Proxmox Server Solutions GmbH. This project is not affiliated with or endorsed by Proxmox Server Solutions GmbH; the logo is used to identify the integration it works with. The Proxmox Extended Sensors logo belongs to its author ([Javisen/proxmox_sensors](https://github.com/Javisen/proxmox_sensors)) and is used only to identify that integration.
 
 ## License
 
