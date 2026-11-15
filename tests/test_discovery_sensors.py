@@ -126,7 +126,14 @@ async def test_inventory_extended_sensors(hass: HomeAssistant):
     [n] = inv["node"]
     assert n["name"] == "pve1" and n["key"] == "pve1" and n["source"] == "sensors"
     assert set(n["entities"]) == {
-        "cpu", "memory_pct", "disk_pct", "temperature", "health_score", "io_wait", "overloaded", "stressed"
+        "cpu",
+        "memory_pct",
+        "disk_pct",
+        "temperature",
+        "health_score",
+        "io_wait",
+        "overloaded",
+        "stressed",
     }
 
     [v] = inv["vm"]
