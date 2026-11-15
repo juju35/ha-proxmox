@@ -1,10 +1,15 @@
 """Constants for the Proxmox Panel integration."""
 
 DOMAIN = "proxmox_panel"
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 # The core Proxmox VE integration, whose devices and entities the panel shows
 PROXMOX_DOMAIN = "proxmoxve"
+# The Proxmox Extended Sensors integration (Javisen/proxmox_sensors, juju35/ha-proxmox#14): read the same way, from
+# its own devices and entities, which carry the resource in the device identifier and the metric in the entity's
+# translation key. It also brings a few sensors the Proxmox VE integration has no equivalent for: the node's
+# temperature and health, the physical disks (SMART) and the Proxmox Backup Server datastores.
+PROXMOX_SENSORS_DOMAIN = "proxmox_sensors"
 
 # Files served by the integration, and the sidebar panel (its own path, not /proxmox_panel,
 # so the frontend's panel route never shadows the files)

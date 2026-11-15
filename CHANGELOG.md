@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0 - 2026-11-15
+
+### Features
+- **Proxmox Extended Sensors** ([#14](https://github.com/juju35/ha-proxmox/issues/14), requested by @stevaedrum): the panel and the cards also read the [Proxmox Extended Sensors](https://github.com/Javisen/proxmox_sensors) integration (`proxmox_sensors`), whose devices carry the resource in their identifier and the metric in each entity's translation key. Its nodes, virtual machines, containers and storages fill the panel and the cards as the Proxmox VE integration's do, with the guests' start, stop, reboot, shutdown, pause, hibernate, reset and resume buttons. The built-in and custom Proxmox VE integrations are read as before.
+- **Node temperature and health**: when Proxmox Extended Sensors provides them, a band under the node rings (node card and Nodes tab) shows the CPU temperature, the health score and the IO wait, and a state from the overload sensors (healthy, disk pressure, stressed or overloaded).
+- **Disks and Datastores tabs**: two tabs appear in the panel when Proxmox Extended Sensors offers them — the physical disks with their SMART health, temperature, wear and power-on time, and the Proxmox Backup Server datastores with their usage, deduplication, last backup and GC / prune / verify status.
+
 ## 1.2.0 - 2026-11-14
 
 ### Features

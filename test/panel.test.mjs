@@ -183,3 +183,32 @@ test("no rewrite of the panel under a press: drawn once released", async () => {
   assert.equal(p._pressing, false);
   p.disconnectedCallback();
 });
+
+test("nodes tab shows the health band from Proxmox Extended Sensors", () => {
+  const html = panel()._nodesHtml();
+  assert.match(html, /class="m health"/);
+  assert.match(html, /54 °C/);
+  assert.match(html, /Score 92/);
+  assert.match(html, /class="pill good">Healthy</);
+});
+
+test("disks tab lists the physical disks with SMART and temperature", () => {
+  const html = panel()._disksHtml();
+  assert.match(html, /NVMe Samsung 990 Pro 1 TB/);
+  assert.match(html, /class="pill good">PASSED</);
+  assert.match(html, /41 °C/);
+});
+
+test("datastores tab lists the PBS datastores with usage and task status", () => {
+  const html = panel()._datastoresHtml();
+  assert.match(html, /Datastore: store01/);
+  assert.match(html, /Dedup: 3\.84/);
+  assert.match(html, /GC: OK/);
+});
+
+test("disks and datastores tabs appear only when Proxmox Extended Sensors offers them", () => {
+  const p = panel();
+  assert.ok(p._tabs().includes("disks") && p._tabs().includes("datastores"));
+  p._inv = { ...p._inv, disk: [], pbs: [] };
+  assert.ok(!p._tabs().includes("disks") && !p._tabs().includes("datastores"));
+});

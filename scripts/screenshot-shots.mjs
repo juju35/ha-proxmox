@@ -7,6 +7,8 @@ const pairs = [
   { light: "panel-confirm", dark: "panel-confirm-dark", tab: "containers", press: ["dev_202", "restart"] },
   { light: "panel-storage", dark: "panel-storage-dark", tab: "storage" },
   { light: "panel-backups", dark: "panel-backups-dark", tab: "backups" },
+  { light: "panel-disks", dark: "panel-disks-dark", tab: "disks" },
+  { light: "panel-datastores", dark: "panel-datastores-dark", tab: "datastores" },
   { light: "panel-settings", dark: "panel-settings-dark", tab: "settings" },
   { light: "card", dark: "card-dark", card: "proxmox-card", width: 460 },
   { light: "card-options", dark: "card-options-dark", card: "proxmox-card", width: 460, config: { max_items: 2, show_stopped: false, show_storage: false } },

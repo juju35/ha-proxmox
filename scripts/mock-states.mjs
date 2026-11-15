@@ -26,6 +26,12 @@ set("sensor.pve1_backup_duration", 14.2, { unit_of_measurement: "min" });
 set("binary_sensor.pve1_backup_status", "off");
 set("update.pve1_software_update", "on", { installed_version: "9.1.2", latest_version: "9.1.4" });
 for (const b of ["restart", "shut_down", "start_all", "stop_all", "suspend_all"]) set(`button.pve1_${b}`, "unknown");
+// Proxmox Extended Sensors: the node's temperature and health
+set("sensor.pve1_cpu_temperature", 54, { unit_of_measurement: "°C", device_class: "temperature" });
+set("sensor.pve1_node_score", 92);
+set("sensor.pve1_io_wait", 1.2, { unit_of_measurement: "%" });
+set("binary_sensor.pve1_overloaded", "off");
+set("binary_sensor.pve1_stressed", "off");
 
 const guests = [
   // kind, vmid, name, status, cpu %, mem %, mem GiB, max mem GiB, disk GiB, max disk GiB, in GiB, out GiB, uptime s
@@ -42,7 +48,7 @@ const guests = [
 ];
 const VM_BUTTONS = ["start", "stop", "restart", "pause", "hibernate", "resume", "reset", "shutdown", "snapshot_create"];
 const CT_BUTTONS = ["start", "stop", "restart", "snapshot_create"];
-const items = { node: [], vm: [], container: [], storage: [] };
+const items = { node: [], vm: [], container: [], storage: [], disk: [], pbs: [] };
 
 items.node.push({
   id: "dev_pve1", kind: "node", name: "pve1", entry_id: "e1", key: "node/pve1", node: null, url: "https://192.168.1.10:8006/#v1:0:=node/pve1",
@@ -52,6 +58,8 @@ items.node.push({
     status: "sensor.pve1_status", running: "binary_sensor.pve1_status", last_backup: "sensor.pve1_last_backup", backup_duration: "sensor.pve1_backup_duration",
     backup_problem: "binary_sensor.pve1_backup_status", update: "update.pve1_software_update", reboot: "button.pve1_restart", shutdown: "button.pve1_shut_down",
     start_all: "button.pve1_start_all", stop_all: "button.pve1_stop_all", suspend_all: "button.pve1_suspend_all",
+    temperature: "sensor.pve1_cpu_temperature", health_score: "sensor.pve1_node_score", io_wait: "sensor.pve1_io_wait",
+    overloaded: "binary_sensor.pve1_overloaded", stressed: "binary_sensor.pve1_stressed",
   },
   disabled: [],
 });
@@ -105,6 +113,48 @@ for (const [name, used, total, active, shared] of storages) {
     set(entities.used_pct, ((used / total) * 100).toFixed(1), { unit_of_measurement: "%" });
   }
   items.storage.push({ id: `dev_st_${name}`, kind: "storage", name: `Storage (${name})`, entry_id: "e1", key: name, node: "dev_pve1", url: null, entities, disabled: [] });
+}
+
+// Proxmox Extended Sensors: physical disks (SMART) and a Proxmox Backup Server datastore
+const disks = [
+  // name, SMART, temp °C, wear %, power-on hours
+  ["NVMe Samsung 990 Pro 1 TB", "PASSED", 41, 3, 14230],
+  ["SSD Crucial MX500 2 TB", "PASSED", 36, 11, 32110],
+];
+for (const [name, smart, temp, wear, power] of disks) {
+  const p = `disk_${name.replace(/[^a-z0-9]+/gi, "_").toLowerCase()}`;
+  set(`sensor.${p}_smart`, smart);
+  set(`sensor.${p}_temp`, temp, { unit_of_measurement: "°C", device_class: "temperature" });
+  set(`sensor.${p}_wear`, wear, { unit_of_measurement: "%" });
+  set(`sensor.${p}_power`, power, { unit_of_measurement: "h" });
+  items.disk.push({
+    id: `dev_${p}`, kind: "disk", name, entry_id: "e2", key: name, node: "dev_pve1", source: "sensors", url: null,
+    entities: { health: `sensor.${p}_smart`, temperature: `sensor.${p}_temp`, wearout: `sensor.${p}_wear`, power_on: `sensor.${p}_power` },
+    disabled: [],
+  });
+}
+
+const datastores = [
+  // name, used %, dedup, gc, prune, verify, last backup hours ago
+  ["store01", 47.3, "3.84", "OK", "OK", "OK", 6],
+  ["store-offsite", 71.8, "2.11", "OK", "OK", "pending", 27],
+];
+for (const [name, pct, dedup, gc, prune, verify, hrs] of datastores) {
+  const p = `pbs_${name.replace(/[^a-z0-9]+/gi, "_").toLowerCase()}`;
+  set(`sensor.${p}_usage`, pct, { unit_of_measurement: "%" });
+  set(`sensor.${p}_dedup`, dedup);
+  set(`sensor.${p}_gc`, gc);
+  set(`sensor.${p}_prune`, prune);
+  set(`sensor.${p}_verify`, verify);
+  set(`sensor.${p}_last`, ago(hrs * 3600));
+  items.pbs.push({
+    id: `dev_${p}`, kind: "pbs", name: `Datastore: ${name}`, entry_id: "e2", key: `Datastore: ${name}`, node: null, source: "sensors", url: null,
+    entities: {
+      used_pct: `sensor.${p}_usage`, dedup: `sensor.${p}_dedup`, gc_status: `sensor.${p}_gc`,
+      prune_status: `sensor.${p}_prune`, verify_status: `sensor.${p}_verify`, last_backup: `sensor.${p}_last`,
+    },
+    disabled: [],
+  });
 }
 
 // 24 h of CPU and RAM, every 10 minutes: a calm day with a backup at night and a busier evening

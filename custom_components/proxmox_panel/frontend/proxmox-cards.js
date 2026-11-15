@@ -22,6 +22,7 @@ import {
   PROXMOX_VARS,
   proxmoxBytesOf,
   proxmoxFind,
+  proxmoxHealthBand,
   proxmoxHistory,
   proxmoxHoldUnderPress,
   proxmoxLang,
@@ -40,7 +41,7 @@ import {
   proxmoxUptime,
 } from "./proxmox-common.js";
 
-export const PROXMOX_CARDS_VERSION = "1.2.0";
+export const PROXMOX_CARDS_VERSION = "1.3.0";
 const LANGUAGE_NAMES = {
   en: "English", fr: "Français", de: "Deutsch", es: "Español", sr: "Српски", "sr-Latn": "Srpski (latinica)", it: "Italiano",
   nl: "Nederlands", pt: "Português", pl: "Polski", ro: "Română", da: "Dansk", sv: "Svenska", bg: "Български", ru: "Русский",
@@ -397,7 +398,7 @@ class ProxmoxBaseCard extends HTMLElement {
     const gauges = [
       this._gauge("cpu", proxmoxNum(this._hass, e.cpu), "", this._history[e.cpu], e.cpu),
       this._gauge("ram", this._pctOf(e.memory_pct, e.memory, e.max_memory), this._of(e.memory, e.max_memory), this._history[e.memory_pct], e.memory_pct || e.memory),
-      this._gauge("disk", this._pctOf(null, e.disk, e.max_disk), this._of(e.disk, e.max_disk), null, e.disk),
+      this._gauge("disk", this._pctOf(e.disk_pct, e.disk, e.max_disk), this._of(e.disk, e.max_disk), null, e.disk_pct || e.disk),
     ];
     return `<div class="gauges">${gauges.join("")}</div>`;
   }
@@ -651,6 +652,8 @@ export class ProxmoxCard extends ProxmoxBaseCard {
       .join(" · ");
     const pills = `${update?.state === "on" ? `<button class="pill warn" data-action="more-info" data-entity="${esc(e.update)}">${esc(this._t("update"))}</button>` : ""}${proxmoxStatusPill(lang, status)}`;
     const parts = [this._head(this._badge("logo", status !== "online"), this._titleFor(node.name), sub, pills), this._rings(e)];
+    // Proxmox Extended Sensors: the node's temperature and health under the rings (juju35/ha-proxmox#14)
+    parts.push(proxmoxHealthBand(this._hass, lang, node));
     if (this._config.show_vms !== false) parts.push(this._guestList(node, "vm"));
     if (this._config.show_containers !== false) parts.push(this._guestList(node, "container"));
     if (this._config.show_storage !== false) parts.push(this._storage(node));
