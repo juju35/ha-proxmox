@@ -200,7 +200,7 @@ const BANNER_STYLE = `
   /* The title row: the title (ellipsised first, never under 5 characters) then its status pills, centred on it. */
   .htext .tl { display:flex; align-items:center; gap:8px; min-width:0; }
   .htext .n { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:0 1 auto; min-width:0; }
-  .htext .pills { display:flex; flex-wrap:wrap; align-items:center; gap:4px; flex:none; max-width:calc(100% - 5ch - 8px); }
+  .htext .pills { display:flex; flex-wrap:wrap; align-items:center; gap:4px; flex:none; max-width:calc(100% - 56px); }
   /* Not enough room beside the title (two pills, or a narrow card): the pills on their own line under the subtitle;
      very narrow: their dots only, the labels kept in their title and for screen readers. */
   @container px-head (max-width: 300px) { .t.pp2 { display:grid; grid-template-columns:minmax(0,1fr); justify-items:start; }
