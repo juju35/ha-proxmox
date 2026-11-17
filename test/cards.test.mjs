@@ -222,12 +222,18 @@ test("illustrated header: rack in the state's colour, night, classic header with
   // Unique gradient ids per card
   const other = await make(cards.ProxmoxCard, {});
   assert.notEqual(html.match(/px-sheen-\d+/)[0], other._card().match(/px-sheen-\d+/)[0]);
-  // Night: forced, else the sun
+  // Night: forced, else the sun below the horizon or the dark mode
   assert.match((await make(cards.ProxmoxCard, { illustration_theme: "night" }))._card(), /class="banner warn night"/);
   const sunDown = hass();
   sunDown.states = { ...states, "sun.sun": { state: "below_horizon", attributes: {} } };
   assert.match((await make(cards.ProxmoxCard, {}, sunDown))._card(), /night/);
   assert.doesNotMatch((await make(cards.ProxmoxCard, { illustration_theme: "day" }, sunDown))._card(), /banner[^"]*night/);
+  // Home Assistant's dark mode: night while the sun is up too, unless forced to day
+  const darkDay = hass();
+  darkDay.states = { ...states, "sun.sun": { state: "above_horizon", attributes: {} } };
+  darkDay.themes = { darkMode: true };
+  assert.match((await make(cards.ProxmoxCard, {}, darkDay))._card(), /class="banner warn night"/);
+  assert.doesNotMatch((await make(cards.ProxmoxCard, { illustration_theme: "day" }, darkDay))._card(), /banner[^"]*night/);
   // A running machine, a stopped one
   assert.match((await make(cards.ProxmoxGuestCard, { guest: 102 }))._card(), /class="banner ok"/);
   assert.match((await make(cards.ProxmoxGuestCard, { guest: 205 }))._card(), /class="banner idle"/);

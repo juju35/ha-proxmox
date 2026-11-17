@@ -25,3 +25,18 @@ export const shots = pairs.flatMap(({ light, dark, ...setup }) => [
   { file: light, theme: "light", width: 820, ...setup },
   { file: dark, theme: "dark", width: 820, ...setup },
 ]);
+
+// The banner's animations (GIF), one per animated state: all machines running (every status light blinking), some
+// stopped (a warning: those lights off, amber), the node down (only its red light blinking). A stopped machine's banner
+// is still, hence no GIF.
+const NODE_DOWN = { "sensor.pve1_status": { entity_id: "sensor.pve1_status", state: "offline", attributes: {} } };
+const gifPairs = [
+  { light: "header-running", dark: "header-running-dark", card: "proxmox-guest-card", width: 460, config: { guest: 102 } },
+  { light: "header-warning", dark: "header-warning-dark", card: "proxmox-card", width: 460 },
+  { light: "header-down", dark: "header-down-dark", card: "proxmox-mini-card", width: 460, config: { node: "pve1" }, states: NODE_DOWN },
+];
+
+export const gifs = gifPairs.flatMap(({ light, dark, ...setup }) => [
+  { file: light, theme: "light", ...setup },
+  { file: dark, theme: "dark", ...setup },
+]);

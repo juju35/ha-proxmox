@@ -124,7 +124,7 @@ CPU, RAM and disk are drawn as on System Hub's System Monitor card and the NAS c
 | `show_title` | `true` | The node's name in the header |
 | `show_subtitle` | `true` | Uptime and Proxmox VE version under it |
 | `illustration` | `true` | `false`: the classic header instead of the illustrated banner (server rack, lights and tag in the state's colour) |
-| `illustration_theme` | `auto` | `day` or `night` forces the banner's picture; `auto` follows `sun.sun`, else the dark theme |
+| `illustration_theme` | `auto` | `day` or `night` forces the banner's picture; `auto` shows the night picture when `sun.sun` is below the horizon or the theme is dark |
 | `language` | Home Assistant's | One of the 22 languages below |
 
 ### Node mini card
@@ -152,7 +152,7 @@ guest: 102          # a VMID; guests: [100, 202] stacks several machines
 | `show_title` | `true` | The machine's name in the header |
 | `show_subtitle` | `true` | `VM 102 · pve1 · Up for 12 days` under it |
 | `illustration` | `true` | The banner with the rack: green while running, grey when stopped, amber when suspended, red when unavailable; `false` for the classic header |
-| `illustration_theme` | `auto` | Day or night picture of the banner (`auto`: the sun, else the dark theme) |
+| `illustration_theme` | `auto` | Day or night picture of the banner (`auto`: night when the sun is down or the theme is dark) |
 | `language` | Home Assistant's | One of the 22 languages below |
 
 A running machine shows its CPU, RAM and disk gauges (24-hour curves behind CPU and RAM); a stopped one its CPUs, RAM and disk size.
@@ -178,6 +178,14 @@ One line per machine: CPU and RAM bars while it runs, else its status and a quic
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card.png" alt="Machine mini card" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card-dark.png" alt="Machine mini card dark" width="400"> |
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card-zoom.png" alt="Machine mini card zoomed in" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card-zoom-dark.png" alt="Machine mini card zoomed in dark" width="400"> |
 
+The banner's animations (a stopped machine's banner is still):
+
+| Light | Dark |
+|---|---|
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-running.gif" alt="Banner, all machines running: the status lights blinking" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-running-dark.gif" alt="Banner, all machines running: the status lights blinking dark" width="400"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-warning.gif" alt="Banner, some machines stopped: their lights off, amber" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-warning-dark.gif" alt="Banner, some machines stopped: their lights off, amber dark" width="400"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-down.gif" alt="Banner, node down: only its red light blinking" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-down-dark.gif" alt="Banner, node down: only its red light blinking dark" width="400"> |
+
 ## How it works
 
 The Proxmox VE integration creates one device per node, virtual machine, container and storage. The panel's integration reads the device and entity registries and tells the panel which entity is which: each device is recognized by its identifier (`<entry>_node_<id>`, `<entry>_vm_<vmid>`, `<entry>_container_<vmid>`, `<entry>_storage_<name>`), and each entity by the end of its unique ID (`node_cpu`, `vm_memory`, `start`, `snapshot_create`…), so renamed entities and entity IDs in another language are supported. The custom Proxmox VE integration is read the same way, from its own identifiers (`<entry>_NODE_<node>`, `<entry>_QEMU_<vmid>`, `<entry>_LXC_<vmid>`, `<entry>_STORAGE_<name>`) and description keys (`cpu`, `memory_used_perc`, `status_raw`, `startall`…; `<entry>_backup_<node>_finished` for the last backup). Disabled entities are reported too, which is how the Backups tab knows that the backup sensors are off.
@@ -193,7 +201,7 @@ Sizes are shown in base 1024 (KiB, MiB, GiB, TiB) with 2, 1 or 0 decimals as the
 ```bash
 pip install -r requirements_test.txt && pytest   # integration tests (Home Assistant test harness)
 npm ci && npm test                               # panel and card tests
-npm run screenshots                              # renders the panel and the cards with mock data into screenshots/
+npm run screenshots                              # renders the panel and the cards with mock data into screenshots/ (GIFs need ffmpeg)
 ```
 
 The panel (`proxmox-panel.js`) and the cards (`proxmox-cards.js`) are plain JavaScript modules in `custom_components/proxmox_panel/frontend/`, sharing `proxmox-common.js` (strings, icons, formatting), served by the integration with their language files (`frontend/i18n/`): nothing to build.
