@@ -26,7 +26,7 @@ Home Assistant integration that adds a **Proxmox** panel to the sidebar and **Pr
 - **Confirmation** before the actions that stop or restart something (stop, shut down, reset, restart, hibernate, node-wide actions), at the top of the list
 - **Settings**: stopped machines shown or not, the confirmation, inactive storage hidden
 - **Administrators only**: the panel and its commands are kept for administrators
-- **Cards** for your dashboards, seen by every user: a node card (`proxmox-card`) and its mini card, a virtual machine or container card (`proxmox-guest-card`) and its mini card, with an illustrated header (a server rack whose lights follow the state, day and night) and the visual editor; their actions are offered to administrators only
+- **Cards** for your dashboards, seen by every user: a node card (`proxmox-card`) and its mini card, a virtual machine or container card (`proxmox-guest-card`) and its mini card, with an illustrated header (a server rack whose lights and network uplink follow the state, day and night) and the visual editor; their actions are offered to administrators only
 - The **Proxmox logo** as the sidebar icon
 - Light and dark themes, phones and desktops, 22 languages
 - No connection to Proxmox of its own: the panel reads the entities of the Proxmox VE integration and presses its buttons, with the permissions you gave it
@@ -178,13 +178,13 @@ One line per machine: CPU and RAM bars while it runs, else its status and a quic
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card.png" alt="Machine mini card" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card-dark.png" alt="Machine mini card dark" width="400"> |
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card-zoom.png" alt="Machine mini card zoomed in" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card-zoom-dark.png" alt="Machine mini card zoomed in dark" width="400"> |
 
-The banner's animations (a stopped machine's banner is still):
+The banner's animations: the status lights of the rack and its network uplink, a cable along the floor whose packets flow into the rack in the state's colour (a stopped machine's banner is still, its cable grey):
 
 | Light | Dark |
 |---|---|
-| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-running.gif" alt="Banner, all machines running: the status lights blinking" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-running-dark.gif" alt="Banner, all machines running: the status lights blinking dark" width="400"> |
-| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-warning.gif" alt="Banner, some machines stopped: their lights off, amber" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-warning-dark.gif" alt="Banner, some machines stopped: their lights off, amber dark" width="400"> |
-| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-down.gif" alt="Banner, node down: only its red light blinking" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-down-dark.gif" alt="Banner, node down: only its red light blinking dark" width="400"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-running.gif" alt="Banner, all machines running: the status lights blinking, packets flowing in" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-running-dark.gif" alt="Banner, all machines running: the status lights blinking, packets flowing in dark" width="400"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-warning.gif" alt="Banner, some machines stopped: their lights off, slower amber packets" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-warning-dark.gif" alt="Banner, some machines stopped: their lights off, slower amber packets dark" width="400"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-down.gif" alt="Banner, node down: its red light and the uplink red dashes blinking" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-down-dark.gif" alt="Banner, node down: its red light and the uplink red dashes blinking dark" width="400"> |
 
 ## How it works
 

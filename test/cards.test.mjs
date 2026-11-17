@@ -260,6 +260,24 @@ test("illustrated header: rack in the state's colour, night, classic header with
   html = (await make(cards.ProxmoxCard, { illustration: false }))._card();
   assert.doesNotMatch(html, /class="banner/);
   assert.match(html, /class="head"/);
+  assert.doesNotMatch(html, /px-cable/);
+});
+
+test("banner uplink: packets flowing (running), slower (warning), red dashes blinking (node down), still (stopped)", async () => {
+  assert.deepEqual(
+    ["ok", "warn", "err", "idle", "unknown"].map((s) => cards.uplinkMode(s)),
+    ["flow", "slow", "cut", "still", "still"],
+  );
+  const cable = (html) => html.match(/class="px-cable (\w+)"/)?.[1];
+  assert.equal(cable((await make(cards.ProxmoxGuestCard, { guest: 102 }))._card()), "flow");
+  assert.equal(cable((await make(cards.ProxmoxCard, {}))._card()), "slow");
+  assert.equal(cable((await make(cards.ProxmoxGuestCard, { guest: 205 }))._card()), "still");
+  const down = hass();
+  down.states = { ...states, "sensor.pve1_status": { state: "offline", attributes: {} } };
+  assert.equal(cable((await make(cards.ProxmoxMiniCard, { node: "pve1" }, down))._card()), "cut");
+  assert.equal(cable((await make(cards.ProxmoxGuestMiniCard, { guest: 102 }))._card()), "flow");
+  // The cable sits in the banner, before the rack drawn over its end
+  assert.match((await make(cards.ProxmoxCard, {}))._card(), /class="px-ground"><\/div><div class="px-cable slow"[^>]*><\/div><svg class="px-scene"/);
 });
 
 test("sections: a click folds and unfolds; collapsed starts folded and a tap elsewhere folds them again (#7)", async () => {

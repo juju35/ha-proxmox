@@ -131,9 +131,10 @@ for (const s of shots) {
 }
 
 // The banner's animations, one looping GIF per state (screenshots/<file>.gif): every animation paused and stepped
-// frame by frame over the 1.2 s cycle of the status lights, so the GIF is the same whatever the machine's speed.
+// frame by frame over a 2.4 s loop (two blinks of the status lights, one pass of the uplink's slow packets), so the
+// GIF is the same whatever the machine's speed.
 const FPS = 10;
-const CYCLE = 1200;
+const CYCLE = 2400;
 for (const g of gifs) {
   const page = await open(g);
   const clip = await page.evaluate(() => {

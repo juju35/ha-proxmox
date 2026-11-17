@@ -177,6 +177,15 @@ const rackSvg = (state, uid, dim = 1, tagLow = false) => {
   </svg>`;
 };
 
+/**
+ * The network uplink of the banner: a cable along the top of the ground strip into the rack, its packets in the
+ * state's colour. Running: packets flowing in; warning: slower, sparser packets; node down: red dashes blinking, no
+ * flow; stopped: a grey cable, nothing moving.
+ */
+export const UPLINK_MODES = { ok: "flow", warn: "slow", err: "cut", idle: "still" };
+export const uplinkMode = (state) => UPLINK_MODES[state] || "still";
+const uplinkHtml = (state) => `<div class="px-cable ${uplinkMode(state)}" aria-hidden="true"></div>`;
+
 // The banner: 90 px high, a server room's wall, the rack at its right and a 10 px concrete strip edge to edge at its
 // bottom; the round icon, the title and the subtitle on the wall at its left. Day and night pictures.
 const BANNER_STYLE = `
@@ -193,7 +202,18 @@ const BANNER_STYLE = `
   .px-slot { fill:#5c6678; } .err .px-rack, .idle .px-rack { fill:#2f343c; }
   .px-blink { animation:px-blink 1.2s steps(2) infinite; }
   @keyframes px-blink { 50% { opacity:.2; } }
-  @media (prefers-reduced-motion: reduce) { .px-blink { animation:none; } }
+  /* The uplink (see uplinkHtml): it runs under the rack, whose left side is 76 px from the banner's right. Every
+     cycle divides 2.4 s, the GIFs' loop. */
+  .px-cable { position:absolute; left:0; right:72px; bottom:10px; height:4px; background:#5c6678; border-radius:0 2px 2px 0; }
+  .night .px-cable { background:#3a4352; }
+  .px-cable::after { content:""; position:absolute; left:0; right:0; top:1px; height:2px; }
+  .px-cable.flow::after { background:repeating-linear-gradient(90deg, var(--st) 0 6px, transparent 6px 18px); animation:px-flow .6s linear infinite; }
+  .px-cable.slow::after { background:repeating-linear-gradient(90deg, var(--st) 0 6px, transparent 6px 36px); animation:px-flow-slow 2.4s linear infinite; }
+  .px-cable.cut::after { background:repeating-linear-gradient(90deg, var(--st) 0 4px, transparent 4px 10px); animation:px-blink 1.2s steps(2) infinite; }
+  .px-cable.still::after { display:none; }
+  @keyframes px-flow { to { background-position:18px 0; } }
+  @keyframes px-flow-slow { to { background-position:36px 0; } }
+  @media (prefers-reduced-motion: reduce) { .px-blink, .px-cable::after { animation:none !important; } }
   .htext { position:absolute; left:14px; top:0; bottom:10px; right:118px; display:flex; align-items:center; gap:10px; min-width:0; }
   .htext { container:px-head / inline-size; }
   .htext .t { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
@@ -230,7 +250,7 @@ const BANNER_STYLE = `
   .banner.night .zoom { color:#fff; background:rgba(255,255,255,.12); box-shadow:inset 0 0 0 1px rgba(255,255,255,.2); }
   .banner.night .zoom:hover { background:rgba(255,255,255,.22); }
   .banner .zoom .i { width:16px; height:16px; }
-  @container (max-width: 300px) { .px-scene { display:none; } .htext { right:40px; } }
+  @container (max-width: 300px) { .px-scene, .px-cable { display:none; } .htext { right:40px; } }
 `;
 
 let bannerUid = 0;
@@ -486,7 +506,7 @@ class ProxmoxBaseCard extends HTMLElement {
     const s = this._config.show_subtitle === false || !subtitle ? "" : `<span class="s">${esc(subtitle)}</span>`;
     const p = pills.filter(Boolean);
     const badge = `<span class="badge">${icon(iconName)}<span class="brand" title="Proxmox VE">${icon("logo")}</span></span>`;
-    return `<div class="banner ${state}${this._night() ? " night" : ""}"><div class="px-ground"></div>${rackSvg(state, this._uid, dim, !!aside)}
+    return `<div class="banner ${state}${this._night() ? " night" : ""}"><div class="px-ground"></div>${uplinkHtml(state)}${rackSvg(state, this._uid, dim, !!aside)}
       <div class="htext">${badge}<div class="t${p.length > 1 ? " pp2" : ""}"><div class="tl">${t}${p.length ? `<span class="pills">${p.join("")}</span>` : ""}</div>${s}</div></div>${aside}</div>`;
   }
 
