@@ -189,7 +189,7 @@ const uplinkHtml = (state) => `<div class="px-cable ${uplinkMode(state)}" aria-h
 // The banner: 90 px high, a server room's wall, the rack at its right and a 10 px concrete strip edge to edge at its
 // bottom; the round icon, the title and the subtitle on the wall at its left. Day and night pictures.
 const BANNER_STYLE = `
-  ha-card { container-type:inline-size; }
+  ha-card { container:px-card / inline-size; }
   .banner { --st:var(--tone-good); position:relative; overflow:hidden; height:90px; flex:none; margin:-14px -16px 0; color:#1b2533; background:#e3e8ef; }
   .banner.night { color:#fff; background:#161c28; }
   .banner.warn { --st:var(--tone-warn); } .banner.err { --st:var(--tone-bad); } .banner.idle { --st:#8a94a3; }
@@ -268,11 +268,16 @@ class ProxmoxBaseCard extends HTMLElement {
     .t.below .n { justify-self:stretch; }
     .t.below .tl > .pills, .t.more-below .tl > .more { margin-top:2px; }
     .t.below .tl > .pills:not(.more), .t.more-below .tl > .more, .t .tl > .pills:first-child { margin-left:0; }
-    .t.dot-only .pill { padding:4px; }
-    .t.dot-only .pill .txt { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
-    .head .t.dot-only .pill { font-size:0; line-height:0; }
-    .head .t.dot-only .pill::before { content:""; display:block; width:6px; height:6px; border-radius:50%; background:currentColor; }
-    @container (max-width: 200px) { .banner .pill { padding:4px; }
+    .t > :not(.tl):not(.s) { grid-column:1 / -1; justify-self:stretch; min-width:0; }
+    /* No room for both labels: the other pills (an update) keep their dots only (.more-dot); still none, every pill. */
+    .t.dot-only .pill, .t.more-dot .more .pill { padding:4px; }
+    .t.dot-only .pill .txt, .t.more-dot .more .pill .txt { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+    /* The classic header's pills: a dot in their tone before the label, as on the banner (the label hidden when dots only). */
+    .head .t .pill { display:inline-flex; align-items:center; gap:4px; --c:var(--secondary-text-color); }
+    .head .t .pill.good { --c:var(--tone-good); } .head .t .pill.warn { --c:var(--tone-warn); } .head .t .pill.bad { --c:var(--tone-bad); }
+    .head .t .pill::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--c); flex:none; }
+    .head .t.dot-only .pill, .head .t.more-dot .more .pill { font-size:0; line-height:0; gap:0; }
+    @container px-card (max-width: 200px) { .banner .pill { padding:4px; }
       .banner .pill .txt { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }
     .head .n { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .head .s { font-size:12px; color:var(--secondary-text-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -484,7 +489,7 @@ class ProxmoxBaseCard extends HTMLElement {
     if (!root?.querySelectorAll || typeof getComputedStyle !== "function") return;
     for (const t of root.querySelectorAll(".t")) {
       const groups = [...t.querySelectorAll(".tl > .pills")];
-      t.classList.remove("below", "more-below", "dot-only");
+      t.classList.remove("below", "more-below", "more-dot", "dot-only");
       if (!groups.length || !groups[0].getClientRects().length) continue;
       const name = t.querySelector(".tl > .n");
       const gap = 8;
@@ -503,19 +508,23 @@ class ProxmoxBaseCard extends HTMLElement {
         if (groups.length > 1 && fits(1)) t.classList.add("more-below");
         else t.classList.add("below");
       };
-      place();
-      if (!t.classList.contains("below") && !t.classList.contains("more-below")) continue;
-      const sub = t.querySelector(".s");
-      if (sub) sub.title = sub.scrollWidth > sub.clientWidth ? sub.textContent.trim() : "";
-      const banner = t.closest(".banner");
-      const tb = t.getBoundingClientRect();
-      const bb = banner?.getBoundingClientRect();
-      const tall = !!bb && (tb.top < bb.top - 0.5 || tb.bottom > bb.bottom - 10 + 0.5);
-      const wide = groups.some((g) => g.scrollWidth > tb.width + 0.5 || g.getBoundingClientRect().right > tb.right + 0.5);
-      if (!tall && !wide) continue;
-      t.classList.remove("below", "more-below");
-      t.classList.add("dot-only");
-      place();
+      // Whole labels first; then the other pills (an update) as dots, the status pill keeping its label; then every
+      // pill as a dot. The first that fits beside the title, or on the line under the subtitle, wins.
+      for (const mode of ["", "more-dot", "dot-only"]) {
+        if (mode === "more-dot" && groups.length < 2) continue;
+        t.classList.remove("below", "more-below", "more-dot", "dot-only");
+        if (mode) t.classList.add(mode);
+        place();
+        if (!t.classList.contains("below") && !t.classList.contains("more-below")) break;
+        const sub = t.querySelector(".s");
+        if (sub) sub.title = sub.scrollWidth > sub.clientWidth ? sub.textContent.trim() : "";
+        const banner = t.closest(".banner");
+        const tb = t.getBoundingClientRect();
+        const bb = banner?.getBoundingClientRect();
+        const tall = !!bb && (tb.top < bb.top - 0.5 || tb.bottom > bb.bottom - 10 + 0.5);
+        const wide = groups.some((g) => g.scrollWidth > tb.width + 0.5 || g.getBoundingClientRect().right > tb.right + 0.5);
+        if (!tall && !wide) break;
+      }
     }
   }
 
@@ -549,10 +558,19 @@ class ProxmoxBaseCard extends HTMLElement {
     return false;
   }
 
-  _head(badge, title, subtitle, aside) {
+  _head(badge, title, subtitle, pills = []) {
     const t = this._config.show_title === false ? "" : `<span class="n">${esc(title)}</span>`;
     const s = this._config.show_subtitle === false || !subtitle ? "" : `<span class="s">${esc(subtitle)}</span>`;
-    return `<div class="head">${badge}<div class="t"><div class="tl">${t}${aside ? `<span class="pills">${aside}</span>` : ""}</div>${s}</div></div>`;
+    const p = [].concat(pills).filter(Boolean);
+    return `<div class="head">${badge}<div class="t"><div class="tl">${t}${p.length ? `<span class="pills">${p[0]}</span>` : ""}${
+      p.length > 1 ? `<span class="pills more">${p.slice(1).join("")}</span>` : ""
+    }</div>${s}</div></div>`;
+  }
+
+  /** The classic header's status pill: the panel's, with its label in its title for the dot-only view. */
+  _classicPill(status) {
+    const html = proxmoxStatusPill(this._lang(), status);
+    return html.replace(/^<span /, `<span title="${html.replace(/<[^>]*>/g, "")}" `);
   }
 
   _badge(name, muted) {
@@ -951,7 +969,13 @@ export class ProxmoxCard extends ProxmoxBaseCard {
   _nodePills(node, status) {
     const e = node.entities;
     const update = proxmoxState(this._hass, e.update)?.state === "on";
-    return `${update ? `<button class="pill warn" data-action="more-info" data-entity="${esc(e.update)}">${esc(this._t("update"))}</button>` : ""}${proxmoxStatusPill(this._lang(), status)}`;
+    return [this._classicPill(status), update ? this._classicUpdate(e.update) : ""];
+  }
+
+  /** The classic header's "Update available" pill, its label in its title for the dot-only view. */
+  _classicUpdate(entity) {
+    const text = esc(this._t("update"));
+    return `<button class="pill warn" data-action="more-info" data-entity="${esc(entity)}" title="${text}" aria-label="${text}">${text}</button>`;
   }
 
   _nodeHtml(node, bannered = false) {
@@ -1041,15 +1065,14 @@ export class ProxmoxMiniCard extends Zoomable(ProxmoxCard) {
       const n = nodes[0];
       const status = proxmoxStatus(this._hass, n);
       const hasUpdate = proxmoxState(this._hass, n.entities.update)?.state === "on";
-      const update = hasUpdate ? `<button class="pill warn" data-action="more-info" data-entity="${esc(n.entities.update)}">${esc(this._t("update"))}</button>` : "";
       const head = this._illustrated()
         ? this._banner({ ...this._sceneOf([n]), iconName: "server", title: this._titleFor(n.name), subtitle: this._counts(n), pills: [this._nodesPill([n]), hasUpdate ? this._updatePill(n.entities.update) : ""] })
-        : this._head(this._badge("logo", status !== "online"), this._titleFor(n.name), this._counts(n), `${update}${proxmoxStatusPill(this._lang(), status)}`);
+        : this._head(this._badge("logo", status !== "online"), this._titleFor(n.name), this._counts(n), [this._classicPill(status), hasUpdate ? this._classicUpdate(n.entities.update) : ""]);
       return `${head}${this._notes()}${this._miniBars(n.entities)}`;
     }
     const head = this._illustrated()
       ? this._nodesBanner(nodes)
-      : this._head(this._badge("logo", worst), this._config.title || this._t("title"), sub, proxmoxStatusPill(this._lang(), worst ? "offline" : "online"));
+      : this._head(this._badge("logo", worst), this._config.title || this._t("title"), sub, this._classicPill(worst ? "offline" : "online"));
     const rows = nodes.map((n) => {
       const status = proxmoxStatus(this._hass, n);
       return `<div class="row"><span class="dot ${status}"></span>
@@ -1166,7 +1189,7 @@ export class ProxmoxGuestCard extends ProxmoxBaseCard {
     const lang = this._lang();
     const e = g.entities;
     const status = proxmoxStatus(this._hass, g);
-    const parts = [bannered ? "" : this._head(this._badge(g.kind === "vm" ? "vm" : "container", status !== "running"), this._titleFor(g.name), this._subtitle(g, status), proxmoxStatusPill(lang, status))];
+    const parts = [bannered ? "" : this._head(this._badge(g.kind === "vm" ? "vm" : "container", status !== "running"), this._titleFor(g.name), this._subtitle(g, status), this._classicPill(status))];
     if (status === "running") parts.push(this._rings(e));
     else {
       const facts = [];
@@ -1207,7 +1230,6 @@ export class ProxmoxGuestMiniCard extends Zoomable(ProxmoxGuestCard) {
   _compact() {
     const guests = this._guests();
     if (!guests.length) return `<div class="note">${esc(this._t("c_no_guest"))}</div>`;
-    const lang = this._lang();
     const illustrated = this._illustrated();
     if (illustrated && guests.length === 1 && guests[0].item) {
       // One machine: in the banner, its bars (running) or its quick actions under it
@@ -1225,7 +1247,7 @@ export class ProxmoxGuestMiniCard extends Zoomable(ProxmoxGuestCard) {
       const title = this._config.show_title === false ? "" : `<span class="n" style="font-size:14px">${esc(g.name)}</span>`;
       return `<div class="head"${i ? ' style="border-top:1px solid var(--divider-color, rgba(127,127,127,.15));padding-top:10px"' : ""}>
           ${this._badge(g.kind === "vm" ? "vm" : "container", status !== "running")}
-          <div class="t"><div style="display:flex;align-items:center;gap:6px;min-width:0">${title}${proxmoxStatusPill(lang, status)}</div>${body}</div>
+          <div class="t"><div class="tl">${title}<span class="pills">${this._classicPill(status)}</span></div>${body}</div>
           ${quick}</div>`;
     });
     const banner = illustrated ? this._guestsBanner(guests) : "";

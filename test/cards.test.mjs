@@ -96,13 +96,21 @@ test("the pills sit after the whole title or under the subtitle, decided by meas
   assert.match(style, /\.t \{[^}]*grid-template-areas:"n p m \." "s s s s"/);
   assert.match(style, /\.t\.more-below \{ grid-template-areas:"n p \. \." "s s s s" "m m m m"; \}/);
   assert.match(style, /\.t\.below \{ grid-template-areas:"n n n n" "s s s s" "p m \. \."; \}/);
-  assert.match(style, /\.t\.dot-only \.pill \.txt \{ position:absolute;/);
   // The only width rule left for the pills: their dots only on a card of 200 px or less.
   assert.doesNotMatch(style, /px-head \(max-width/);
-  assert.match(style, /@container \(max-width: 200px\) \{ \.banner \.pill \{ padding:4px; \}/);
+  assert.match(style, /@container px-card \(max-width: 200px\) \{ \.banner \.pill \{ padding:4px; \}/);
   // The classic header puts its pills in the same title row.
   const classic = (await make(cards.ProxmoxGuestCard, { guest: 102, illustration: false }))._card();
-  assert.match(classic, /<div class="t"><div class="tl"><span class="n">[^<]*<\/span><span class="pills"><span class="pill good">/);
+  assert.match(classic, /<div class="t"><div class="tl"><span class="n">[^<]*<\/span><span class="pills"><span title="Running" class="pill good">Running<\/span>/);
+  // A node's classic header: the status pill first, then the update apart, each with its label in its title.
+  const node = (await make(cards.ProxmoxCard, { illustration: false }))._card();
+  assert.match(node, /<span class="pills"><span title="Online" class="pill good">Online<\/span><\/span><span class="pills more"><button class="pill warn"[^>]*title="Update available"/);
+  // The classic pills get a dot in their tone, the label hidden when only the dots fit.
+  assert.match(style, /\.head \.t \.pill::before \{ content:""; width:6px; height:6px; border-radius:50%; background:var\(--c\);/);
+  assert.match(style, /\.head \.t\.dot-only \.pill, \.head \.t\.more-dot \.more \.pill \{ font-size:0;/);
+  // Both labels do not fit: the update keeps only its dot, the status pill its label; then every pill as a dot.
+  assert.match(style, /\.t\.dot-only \.pill \.txt, \.t\.more-dot \.more \.pill \.txt \{ position:absolute;/);
+  assert.match(cards.ProxmoxCard.prototype._fitPill.toString(), /\["", "more-dot", "dot-only"\]/);
   // A card that fits nothing never throws in a page without layout (no getComputedStyle): the measure just stops.
   const el = await make(cards.ProxmoxCard, {});
   assert.doesNotThrow(() => el._fitPill());
