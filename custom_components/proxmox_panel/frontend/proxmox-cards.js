@@ -216,17 +216,25 @@ const BANNER_STYLE = `
   @media (prefers-reduced-motion: reduce) { .px-blink, .px-cable::after { animation:none !important; } }
   .htext { position:absolute; left:14px; top:0; bottom:10px; right:118px; display:flex; align-items:center; gap:10px; min-width:0; }
   .htext { container:px-head / inline-size; }
-  .htext .t { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-  /* The title row: the title (ellipsised first, never under 5 characters) then its status pills, centred on it. */
-  .htext .tl { display:flex; align-items:center; gap:8px; min-width:0; }
+  /* The text: the title row (the title, ellipsised first, never under 5 characters, then the status pill centred on
+     it), the other pills (an update) beside it, the subtitle under them. */
+  .htext .t { flex:1; min-width:0; display:grid; grid-template-columns:minmax(0,max-content) auto minmax(0,1fr);
+              grid-template-areas:"tl more ." "s s s"; column-gap:4px; row-gap:2px; align-items:center; justify-items:start; }
+  .htext .tl { grid-area:tl; display:flex; align-items:center; gap:8px; min-width:0; max-width:100%; }
   .htext .n { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:0 1 auto; min-width:0; }
   .htext .pills { display:flex; flex-wrap:wrap; align-items:center; gap:4px; flex:none; max-width:calc(100% - 56px); }
-  /* Not enough room beside the title (two pills, or a narrow card): the pills on their own line under the subtitle;
-     very narrow: their dots only, the labels kept in their title and for screen readers. */
-  @container px-head (max-width: 300px) { .t.pp2 { display:grid; grid-template-columns:minmax(0,1fr); justify-items:start; }
-    .t.pp2 .tl { display:contents; } .t.pp2 .n { max-width:100%; } .t.pp2 .s { justify-self:stretch; } .t.pp2 .pills { order:9; max-width:100%; margin-top:2px; } }
-  @container px-head (max-width: 215px) { .htext .t { display:grid; grid-template-columns:minmax(0,1fr); justify-items:start; }
-    .htext .tl { display:contents; } .htext .n { max-width:100%; } .htext .s { justify-self:stretch; } .htext .pills { order:9; max-width:100%; margin-top:2px; } }
+  .htext .more { grid-area:more; max-width:100%; }
+  .htext .s { grid-area:s; justify-self:stretch; }
+  /* Two pills, no room for both beside the title: the other ones on the subtitle's line, after it (their dots only
+     when narrower), so the text never reaches the floor strip. */
+  @container px-head (max-width: 380px) { .t.pp2 { grid-template-areas:"tl tl tl" "s more ."; column-gap:6px; } .t.pp2 .s { justify-self:start; max-width:100%; } }
+  @container px-head (max-width: 300px) { .t.pp2 .more .pill { padding:4px; }
+    .t.pp2 .more .pill .txt { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }
+  /* Narrow card: the pills on their own line under the subtitle; very narrow: their dots only, the labels kept in
+     their title and for screen readers. */
+  @container px-head (max-width: 215px) { .htext .t { grid-template-areas:"n n n" "s s s" "p more ."; }
+    .htext .tl { display:contents; } .htext .n { grid-area:n; max-width:100%; } .htext .tl .pills { grid-area:p; max-width:100%; margin-top:2px; }
+    .t.pp2 .more { margin-top:2px; } }
   @container px-head (max-width: 150px) { .banner .pill { padding:4px; }
     .banner .pill .txt { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }
   .htext .s { font-size:13px; color:#4a5768; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -507,7 +515,7 @@ class ProxmoxBaseCard extends HTMLElement {
     const p = pills.filter(Boolean);
     const badge = `<span class="badge">${icon(iconName)}<span class="brand" title="Proxmox VE">${icon("logo")}</span></span>`;
     return `<div class="banner ${state}${this._night() ? " night" : ""}"><div class="px-ground"></div>${uplinkHtml(state)}${rackSvg(state, this._uid, dim, !!aside)}
-      <div class="htext">${badge}<div class="t${p.length > 1 ? " pp2" : ""}"><div class="tl">${t}${p.length ? `<span class="pills">${p.join("")}</span>` : ""}</div>${s}</div></div>${aside}</div>`;
+      <div class="htext">${badge}<div class="t${p.length > 1 ? " pp2" : ""}"><div class="tl">${t}${p.length ? `<span class="pills">${p[0]}</span>` : ""}</div>${p.length > 1 ? `<span class="pills more">${p.slice(1).join("")}</span>` : ""}${s}</div></div>${aside}</div>`;
   }
 
   /** The banner's status pill: a dot and `text` in the colour of the header icon. */
