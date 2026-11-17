@@ -153,7 +153,7 @@ export const PROXMOX_PANEL_EN = {
   e_collapsed: "Sections folded",
   e_illustration: "Illustrated header",
   e_illustration_theme: "Illustration theme",
-  e_theme_auto: "Automatic (sun, dark theme)",
+  e_theme_auto: "Automatic (sun or dark theme)",
   e_theme_day: "Day",
   e_theme_night: "Night",
   e_language: "Language",
