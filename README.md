@@ -124,7 +124,7 @@ CPU, RAM and disk are drawn as on System Hub's System Monitor card and the NAS c
 | `show_title` | `true` | The node's name in the header |
 | `show_subtitle` | `true` | Uptime and Proxmox VE version under it |
 | `illustration` | `true` | `false`: the classic header instead of the illustrated banner (server rack, lights and tag in the state's colour) |
-| `illustration_theme` | `auto` | `day` or `night` forces the banner's picture; `auto` shows the night picture when `sun.sun` is below the horizon or the theme is dark |
+| `illustration_theme` | `auto` | `day` or `night` forces the banner's picture; `auto` (follows the Home Assistant theme: night with a dark theme, day with a light theme) |
 | `language` | Home Assistant's | One of the 22 languages below |
 
 ### Node mini card
@@ -152,7 +152,7 @@ guest: 102          # a VMID; guests: [100, 202] stacks several machines
 | `show_title` | `true` | The machine's name in the header |
 | `show_subtitle` | `true` | `VM 102 · pve1 · Up for 12 days` under it |
 | `illustration` | `true` | The banner with the rack: green while running, grey when stopped, amber when suspended, red when unavailable; `false` for the classic header |
-| `illustration_theme` | `auto` | Day or night picture of the banner (`auto`: night when the sun is down or the theme is dark) |
+| `illustration_theme` | `auto` | Day or night picture of the banner (`auto` follows the Home Assistant theme: night with a dark theme, day with a light theme) |
 | `language` | Home Assistant's | One of the 22 languages below |
 
 A running machine shows its CPU, RAM and disk gauges (24-hour curves behind CPU and RAM); a stopped one its CPUs, RAM and disk size.

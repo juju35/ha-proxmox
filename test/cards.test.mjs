@@ -267,11 +267,13 @@ test("illustrated header: rack in the state's colour, night, classic header with
   // Unique gradient ids per card
   const other = await make(cards.ProxmoxCard, {});
   assert.notEqual(html.match(/px-sheen-\d+/)[0], other._card().match(/px-sheen-\d+/)[0]);
-  // Night: forced, else the sun below the horizon or the dark mode
+  // Night: forced, else the dark mode alone (a light theme keeps the day picture after sunset)
   assert.match((await make(cards.ProxmoxCard, { illustration_theme: "night" }))._card(), /class="banner warn night"/);
   const sunDown = hass();
   sunDown.states = { ...states, "sun.sun": { state: "below_horizon", attributes: {} } };
-  assert.match((await make(cards.ProxmoxCard, {}, sunDown))._card(), /night/);
+  assert.doesNotMatch((await make(cards.ProxmoxCard, {}, sunDown))._card(), /banner[^"]*night/);
+  sunDown.themes = { darkMode: true };
+  assert.match((await make(cards.ProxmoxCard, {}, sunDown))._card(), /class="banner warn night"/);
   assert.doesNotMatch((await make(cards.ProxmoxCard, { illustration_theme: "day" }, sunDown))._card(), /banner[^"]*night/);
   // Home Assistant's dark mode: night while the sun is up too, unless forced to day
   const darkDay = hass();
