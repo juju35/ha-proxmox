@@ -303,7 +303,9 @@ class ProxmoxBaseCard extends HTMLElement {
     .gauge[data-action] { cursor:pointer; }
     .gauge.warn { --c:var(--tone-warn); } .gauge.crit { --c:var(--tone-bad); } .gauge.muted { --c:var(--secondary-text-color); }
     .gauge > :not(.spark) { position:relative; }
-    .gauge .spark { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+    /* 24 h curve in its own 24 px band under the ring and its labels, never behind the text. */
+    .gauge:has(> .spark) { padding-bottom:30px; }
+    .gauge .spark { position:absolute; inset:auto 0 0; width:100%; height:24px; pointer-events:none; }
     .spark-a { fill:color-mix(in srgb, var(--c) 12%, transparent); }
     .spark-l { fill:none; stroke:color-mix(in srgb, var(--c) 50%, transparent); stroke-width:1.2; vector-effect:non-scaling-stroke; }
     .dial { position:relative; width:100%; max-width:60px; aspect-ratio:1; }
@@ -316,7 +318,7 @@ class ProxmoxBaseCard extends HTMLElement {
     .dial .val .i { width:12px; height:12px; color:var(--secondary-text-color); }
     .gauge .lbl { font-size:12px; color:var(--secondary-text-color); text-align:center; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .gauge .lbl2 { font-size:11px; color:var(--secondary-text-color); text-align:center; }
-    @container (max-width: 300px) { .gauge .lbl { font-size:11px; } .gauge .lbl2 { font-size:10px; } }
+    @container (max-width: 300px) { .gauge .lbl, .gauge .lbl2 { font-size:11px; } }
     .list { display:flex; flex-direction:column; }
     .row { display:flex; align-items:center; gap:10px; padding:7px 0; border-top:1px solid var(--divider-color, rgba(127,127,127,.15)); min-height:34px; }
     .list > .row:first-child { border-top:0; }

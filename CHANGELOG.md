@@ -8,6 +8,9 @@
 - README: the banner's animations as GIFs (running, warning, node down), light and dark.
 - **Status pill on every banner**, right after the title with a dot, in the colour of the header icon: Online, the machines running when some are stopped, Offline, or the machine's state (also on the mini cards and the summing-up banners, which had none); on a narrow card it moves under the subtitle, then keeps only its dot. A second pill (Update available) sits beside it when there is room, else at the end of the subtitle's line (only its dot when narrower), never down on the floor strip. The mini cards' expand / collapse button sits in the banner's top right corner (24 px, frosted), in the compact **and** the expanded view, and in the card's corner without the illustration.
 
+### Fixes
+- The 24 h sparklines of the CPU / RAM / disk gauges no longer run under the text: they sit in a 24 px band of their own under the ring and its labels ("RAM 19.8 GiB / 31.9 GiB"); the gauges' used / total line no longer drops to 10 px on narrow cards (11 px).
+
 ## 1.3.0 - 2026-11-15
 
 ### Features
