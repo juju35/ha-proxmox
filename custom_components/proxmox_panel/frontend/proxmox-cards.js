@@ -195,22 +195,41 @@ const BANNER_STYLE = `
   @keyframes px-blink { 50% { opacity:.2; } }
   @media (prefers-reduced-motion: reduce) { .px-blink { animation:none; } }
   .htext { position:absolute; left:14px; top:0; bottom:10px; right:118px; display:flex; align-items:center; gap:10px; min-width:0; }
+  .htext { container:px-head / inline-size; }
   .htext .t { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-  .htext .tl { display:flex; flex-wrap:wrap; align-items:center; gap:2px 6px; min-width:0; }
-  .htext .n { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+  /* The title row: the title (ellipsised first, never under 5 characters) then its status pills, centred on it. */
+  .htext .tl { display:flex; align-items:center; gap:8px; min-width:0; }
+  .htext .n { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:0 1 auto; min-width:5ch; }
+  .htext .pills { display:flex; flex-wrap:wrap; align-items:center; gap:4px; flex:none; max-width:calc(100% - 5ch - 8px); }
+  /* Not enough room beside the title (two pills, or a narrow card): the pills on their own line under the subtitle;
+     very narrow: their dots only, the labels kept in their title and for screen readers. */
+  @container px-head (max-width: 300px) { .t.pp2 { display:grid; grid-template-columns:minmax(0,1fr); justify-items:start; }
+    .t.pp2 .tl { display:contents; } .t.pp2 .n { max-width:100%; } .t.pp2 .s { justify-self:stretch; } .t.pp2 .pills { order:9; max-width:100%; margin-top:2px; } }
+  @container px-head (max-width: 215px) { .htext .t { display:grid; grid-template-columns:minmax(0,1fr); justify-items:start; }
+    .htext .tl { display:contents; } .htext .n { max-width:100%; } .htext .s { justify-self:stretch; } .htext .pills { order:9; max-width:100%; margin-top:2px; } }
+  @container px-head (max-width: 150px) { .banner .pill { padding:4px; }
+    .banner .pill .txt { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }
   .htext .s { font-size:13px; color:#4a5768; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .night .htext .s { color:rgba(255,255,255,.78); }
   .banner .badge { position:relative; color:var(--st); background:rgba(255,255,255,.62); box-shadow:inset 0 0 0 1px rgba(27,37,51,.12); }
   .banner.night .badge { background:rgba(255,255,255,.12); box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); }
-  .banner .pill { background:rgba(255,255,255,.7); }
-  .banner.night .pill { background:rgba(10,16,28,.55); }
-  .banner.night .pill, .banner.night .pill.good, .banner.night .pill.warn, .banner.night .pill.bad { color:#fff; }
+  /* Pills on the wall: a dot and the label in their colour (the status pill in the icon's, --st), on frosted glass. */
+  .banner .pill { --c:#8a94a3; display:inline-flex; align-items:center; gap:4px; padding:1px 8px; line-height:16px; font-size:11px; font-weight:500;
+                  background:color-mix(in srgb, var(--c) 18%, rgba(255,255,255,.78)); color:color-mix(in srgb, var(--c) 45%, #0d2a45); }
+  .banner .pill::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--c); flex:none; }
+  .banner .pill.good { --c:var(--tone-good); } .banner .pill.warn { --c:var(--tone-warn); } .banner .pill.bad { --c:var(--tone-bad); } .banner .pill.st { --c:var(--st); }
+  .banner.night .pill { background:color-mix(in srgb, var(--c) 30%, rgba(8,18,38,.55)); color:color-mix(in srgb, var(--c) 35%, #ffffff); }
   /* The Proxmox logo on a white tile at the icon's bottom right, readable on any theme. */
   .brand { position:absolute; right:-4px; bottom:-4px; width:18px; height:18px; border-radius:5px; padding:2px; box-sizing:border-box;
            display:grid; place-items:center; background:#fff; color:var(--px-accent); box-shadow:0 0 0 1px rgba(27,37,51,.16), 0 1px 3px rgba(27,37,51,.18); }
   .brand .i { width:14px; height:14px; }
-  .banner .zoom { position:absolute; top:6px; right:6px; color:#1b2533; background:rgba(255,255,255,.6); border-color:transparent; }
-  .banner.night .zoom { color:#fff; background:rgba(10,16,28,.5); }
+  /* The mini cards' zoom button: 24 px frosted round in the banner's top right corner. */
+  .banner .zoom { position:absolute; z-index:2; top:5px; right:5px; width:24px; height:24px; border:0; color:#33506b;
+                  background:rgba(255,255,255,.55); box-shadow:inset 0 0 0 1px rgba(255,255,255,.7); backdrop-filter:blur(4px); }
+  .banner .zoom:hover { background:rgba(255,255,255,.75); }
+  .banner.night .zoom { color:#fff; background:rgba(255,255,255,.12); box-shadow:inset 0 0 0 1px rgba(255,255,255,.2); }
+  .banner.night .zoom:hover { background:rgba(255,255,255,.22); }
+  .banner .zoom .i { width:16px; height:16px; }
   @container (max-width: 300px) { .px-scene { display:none; } .htext { right:40px; } }
 `;
 
@@ -223,7 +242,9 @@ class ProxmoxBaseCard extends HTMLElement {
     :host { ${PROXMOX_VARS} display:block; }
     ha-card { padding:14px 16px; display:flex; flex-direction:column; gap:12px; overflow:hidden; color:var(--primary-text-color); }
     .head { display:flex; align-items:center; gap:12px; }
-    .head .t { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+    /* The title keeps room for a few characters: without it, the pills go to a line of their own. */
+    .head { flex-wrap:wrap; row-gap:6px; }
+    .head .t { flex:1; min-width:min(6ch, 100%); display:flex; flex-direction:column; gap:2px; }
     .head .n { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .head .s { font-size:12px; color:var(--secondary-text-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .zoom { all:unset; display:grid; place-items:center; width:32px; height:32px; border-radius:50%; cursor:pointer; flex:none;
@@ -231,6 +252,11 @@ class ProxmoxBaseCard extends HTMLElement {
     .zoom:hover { background:color-mix(in srgb, var(--secondary-text-color) 10%, transparent); }
     .zoom:focus-visible, .act:focus-visible, .name:focus-visible { outline:2px solid var(--px-accent); outline-offset:1px; }
     .zoom .i { width:18px; height:18px; }
+    /* Without the illustration, the mini cards' zoom button in the card's top right corner, the headers clear of it. */
+    ha-card { position:relative; }
+    .zoom.plain { position:absolute; z-index:2; top:12px; right:12px; width:24px; height:24px; border:0; box-shadow:inset 0 0 0 1px var(--divider-color, rgba(127,127,127,.3)); }
+    .zoom.plain .i { width:16px; height:16px; }
+    .zoom.plain ~ .head, .zoom.plain ~ * .head:first-child { padding-right:26px; }
     .note { font-size:13px; color:var(--secondary-text-color); }
     .note.bad { color:color-mix(in srgb, var(--tone-bad) 50%, var(--primary-text-color)); }
     .note.good { color:color-mix(in srgb, var(--tone-good) 50%, var(--primary-text-color)); }
@@ -450,12 +476,47 @@ class ProxmoxBaseCard extends HTMLElement {
    * The illustrated header: the round icon in the state's colour with the Proxmox logo on it, the title (and its
    * pills) and the subtitle on the wall, the rack at the right, the zoom button (mini cards) at the top right.
    */
-  _banner({ state, iconName, title, subtitle, pills = "", aside = "", dim = 1 }) {
+  _banner({ state, iconName, title, subtitle, pills = [], aside = "", dim = 1 }) {
+    // The mini cards' zoom button (compact and expanded view) goes in the first banner drawn (see Zoomable._render).
+    if (this._zoomPending) {
+      aside += this._zoomButton();
+      this._zoomPending = false;
+    }
     const t = this._config.show_title === false ? "" : `<span class="n">${esc(title)}</span>`;
     const s = this._config.show_subtitle === false || !subtitle ? "" : `<span class="s">${esc(subtitle)}</span>`;
+    const p = pills.filter(Boolean);
     const badge = `<span class="badge">${icon(iconName)}<span class="brand" title="Proxmox VE">${icon("logo")}</span></span>`;
     return `<div class="banner ${state}${this._night() ? " night" : ""}"><div class="px-ground"></div>${rackSvg(state, this._uid, dim, !!aside)}
-      <div class="htext">${badge}<div class="t"><div class="tl">${t}${pills}</div>${s}</div></div>${aside}</div>`;
+      <div class="htext">${badge}<div class="t${p.length > 1 ? " pp2" : ""}"><div class="tl">${t}${p.length ? `<span class="pills">${p.join("")}</span>` : ""}</div>${s}</div></div>${aside}</div>`;
+  }
+
+  /** The banner's status pill: a dot and `text` in the colour of the header icon. */
+  _statusPill(text) {
+    return `<span class="pill st" title="${esc(text)}"><span class="txt">${esc(text)}</span></span>`;
+  }
+
+  /** A machine's or node's status in words (the raw state when it has none). */
+  _statusText(status) {
+    const text = this._t(`st_${status}`);
+    return text === `st_${status}` ? status : text;
+  }
+
+  /** The banner's "Update available" pill, opening the node's update entity. */
+  _updatePill(entity) {
+    const text = this._t("update");
+    return `<button class="pill warn" data-action="more-info" data-entity="${esc(entity)}" title="${esc(text)}"><span class="txt">${esc(text)}</span></button>`;
+  }
+
+  /** The status of nodes for their banner's pill: offline, else the machines running when some are not, else online. */
+  _nodesPill(nodes) {
+    const scene = this._sceneOf(nodes).state;
+    if (scene === "err") return this._statusPill(this._t("st_offline"));
+    if (scene === "warn") {
+      const guests = [...this._items("vm"), ...this._items("container")].filter((g) => nodes.some((n) => n.id === g.node));
+      const running = guests.filter((g) => proxmoxStatus(this._hass, g) === "running").length;
+      return this._statusPill(this._t("c_running", { running, n: guests.length }));
+    }
+    return this._statusPill(this._t("st_online"));
   }
 
   _button(item, action, label = true) {
@@ -641,10 +702,10 @@ const Zoomable = (Base) =>
       return this._zoomed ? super.getGridOptions() : { columns: 6, min_columns: 6 };
     }
 
-    _zoomButton() {
+    _zoomButton(cls = "") {
       if (this._config.zoom === false) return "";
       const title = esc(this._t(this._zoomed ? "c_zoom_out" : "c_zoom_in"));
-      return `<button class="zoom" data-action="zoom" title="${title}" aria-label="${title}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="${this._zoomed ? COLLAPSE : EXPAND}"/></svg></button>`;
+      return `<button class="zoom${cls ? ` ${cls}` : ""}" data-action="zoom" title="${title}" aria-label="${title}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="${this._zoomed ? COLLAPSE : EXPAND}"/></svg></button>`;
     }
 
     _setZoom(zoomed) {
@@ -663,8 +724,14 @@ const Zoomable = (Base) =>
       super._action(action, data, ev);
     }
 
+    // The zoom button, in the compact and the expanded view: in the top right corner of the first banner drawn
+    // (see _banner), else, without the illustration, in the card's top right corner.
     _render(inv) {
-      return this._zoomed ? super._render(inv) : this._compact(inv);
+      this._zoomPending = !!this._zoomButton();
+      const html = this._zoomed ? super._render(inv) : this._compact(inv);
+      const plain = this._zoomPending ? this._zoomButton("plain") : "";
+      this._zoomPending = false;
+      return `${plain}${html}`;
     }
   };
 
@@ -757,14 +824,17 @@ export class ProxmoxCard extends ProxmoxBaseCard {
 
   _nodeBanner(node, aside = "") {
     const status = proxmoxStatus(this._hass, node);
-    return this._banner({ ...this._sceneOf([node]), iconName: "server", title: this._titleFor(node.name), subtitle: this._nodeSub(node, status), pills: this._nodePills(node, status), aside });
+    const update = proxmoxState(this._hass, node.entities.update)?.state === "on" ? this._updatePill(node.entities.update) : "";
+    return this._banner({ ...this._sceneOf([node]), iconName: "server", title: this._titleFor(node.name), subtitle: this._nodeSub(node, status), pills: [this._nodesPill([node]), update], aside });
   }
 
   _nodesBanner(nodes, aside = "") {
     const guests = [...this._items("vm"), ...this._items("container")].filter((g) => nodes.some((n) => n.id === g.node));
     const running = guests.filter((g) => proxmoxStatus(this._hass, g) === "running").length;
-    const subtitle = `${this._t("c_nodes", { n: nodes.length })} · ${this._t("c_running", { running, n: guests.length })}`;
-    return this._banner({ ...this._sceneOf(nodes), iconName: "server", title: this._config.title || this._t("title"), subtitle, aside });
+    // The machines running are in the pill when some are stopped: not repeated in the subtitle then.
+    const warn = this._sceneOf(nodes).state === "warn";
+    const subtitle = warn ? this._t("c_nodes", { n: nodes.length }) : `${this._t("c_nodes", { n: nodes.length })} · ${this._t("c_running", { running, n: guests.length })}`;
+    return this._banner({ ...this._sceneOf(nodes), iconName: "server", title: this._config.title || this._t("title"), subtitle, pills: [this._nodesPill(nodes)], aside });
   }
 
   _nodeSub(node, status) {
@@ -870,18 +940,16 @@ export class ProxmoxMiniCard extends Zoomable(ProxmoxCard) {
       // One node: its name in the header, its counts as the subtitle, its bars under it
       const n = nodes[0];
       const status = proxmoxStatus(this._hass, n);
-      const update = proxmoxState(this._hass, n.entities.update)?.state === "on"
-        ? `<button class="pill warn" data-action="more-info" data-entity="${esc(n.entities.update)}">${esc(this._t("update"))}</button>`
-        : "";
-      const pills = `${update}${status === "online" ? "" : proxmoxStatusPill(this._lang(), status)}`;
+      const hasUpdate = proxmoxState(this._hass, n.entities.update)?.state === "on";
+      const update = hasUpdate ? `<button class="pill warn" data-action="more-info" data-entity="${esc(n.entities.update)}">${esc(this._t("update"))}</button>` : "";
       const head = this._illustrated()
-        ? this._banner({ ...this._sceneOf([n]), iconName: "server", title: this._titleFor(n.name), subtitle: this._counts(n), pills, aside: this._zoomButton() })
-        : this._head(this._badge("logo", status !== "online"), this._titleFor(n.name), this._counts(n), `${pills}${this._zoomButton()}`);
+        ? this._banner({ ...this._sceneOf([n]), iconName: "server", title: this._titleFor(n.name), subtitle: this._counts(n), pills: [this._nodesPill([n]), hasUpdate ? this._updatePill(n.entities.update) : ""] })
+        : this._head(this._badge("logo", status !== "online"), this._titleFor(n.name), this._counts(n), `${update}${proxmoxStatusPill(this._lang(), status)}`);
       return `${head}${this._notes()}${this._miniBars(n.entities)}`;
     }
     const head = this._illustrated()
-      ? this._nodesBanner(nodes, this._zoomButton())
-      : this._head(this._badge("logo", worst), this._config.title || this._t("title"), sub, this._zoomButton());
+      ? this._nodesBanner(nodes)
+      : this._head(this._badge("logo", worst), this._config.title || this._t("title"), sub, proxmoxStatusPill(this._lang(), worst ? "offline" : "online"));
     const rows = nodes.map((n) => {
       const status = proxmoxStatus(this._hass, n);
       return `<div class="row"><span class="dot ${status}"></span>
@@ -958,7 +1026,7 @@ export class ProxmoxGuestCard extends ProxmoxBaseCard {
       iconName: g.kind === "vm" ? "vm" : "container",
       title: this._titleFor(g.name),
       subtitle: this._subtitle(g, status),
-      pills: proxmoxStatusPill(this._lang(), status),
+      pills: [this._statusPill(this._statusText(status))],
       aside,
     });
   }
@@ -968,11 +1036,14 @@ export class ProxmoxGuestCard extends ProxmoxBaseCard {
     const statuses = guests.map(({ item }) => (item ? proxmoxStatus(this._hass, item) : "unavailable"));
     const running = statuses.filter((s) => s === "running").length;
     const kinds = new Set(guests.map(({ item }) => item?.kind).filter(Boolean));
+    const state = guestScene(statuses);
     return this._banner({
-      state: guestScene(statuses),
+      state,
       iconName: kinds.size === 1 && kinds.has("container") ? "container" : "vm",
       title: this._config.title || this._t("title"),
-      subtitle: this._t("c_running", { running, n: statuses.length }),
+      // The machines running: in the pill when some are stopped (the subtitle then empty), else in the subtitle.
+      subtitle: state === "warn" ? "" : this._t("c_running", { running, n: statuses.length }),
+      pills: [this._statusPill(state === "warn" ? this._t("c_running", { running, n: statuses.length }) : this._t({ ok: "st_running", idle: "st_stopped", err: "st_unavailable" }[state]))],
       dim: Math.min(5, Math.max(1, Math.round((6 * (statuses.length - running)) / Math.max(1, statuses.length)))),
       aside,
     });
@@ -1044,7 +1115,7 @@ export class ProxmoxGuestMiniCard extends Zoomable(ProxmoxGuestCard) {
       const status = proxmoxStatus(this._hass, g);
       const quick = status === "running" ? "" : this._quick(g).map((a) => this._button(g, a)).join("");
       const body = status === "running" ? this._miniBars({ ...g.entities, disk: null, max_disk: null }) : quick ? `<div class="acts">${quick}</div>` : "";
-      return `${this._guestBanner(g, this._zoomButton())}${this._notes()}${body}`;
+      return `${this._guestBanner(g)}${this._notes()}${body}`;
     }
     const rows = guests.map(({ key, item: g }, i) => {
       if (!g) return `<div class="note bad">${esc(this._t("c_guest_missing", { guest: key }))}</div>`;
@@ -1055,9 +1126,9 @@ export class ProxmoxGuestMiniCard extends Zoomable(ProxmoxGuestCard) {
       return `<div class="head"${i ? ' style="border-top:1px solid var(--divider-color, rgba(127,127,127,.15));padding-top:10px"' : ""}>
           ${this._badge(g.kind === "vm" ? "vm" : "container", status !== "running")}
           <div class="t"><div style="display:flex;align-items:center;gap:6px;min-width:0">${title}${proxmoxStatusPill(lang, status)}</div>${body}</div>
-          ${quick}${i === 0 && !illustrated ? this._zoomButton() : ""}</div>`;
+          ${quick}</div>`;
     });
-    const banner = illustrated ? this._guestsBanner(guests, this._zoomButton()) : "";
+    const banner = illustrated ? this._guestsBanner(guests) : "";
     return `${banner}${this._notes()}<div class="block" style="gap:10px">${rows.join("")}</div>`;
   }
 }

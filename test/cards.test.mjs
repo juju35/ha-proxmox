@@ -67,8 +67,23 @@ test("mini card: one line per node, zoom to the full card", async () => {
   card._zoomed = true;
   html = card._card();
   assert.match(html, /class="gauges"/);
+  // The expanded view keeps the button (collapse), in the banner's corner like the compact view's.
+  assert.match(html, /class="banner[^"]*">[\s\S]*<button class="zoom" data-action="zoom"[^>]*aria-label="Back to the compact view"/);
+  card._config = { ...card._config, illustration: false };
+  assert.match(card._card(), /^<button class="zoom plain" data-action="zoom"/);
   const noZoom = await make(cards.ProxmoxMiniCard, { zoom: false });
   assert.doesNotMatch(noZoom._card(), /data-action="zoom"/);
+});
+
+test("the banner's status pill follows the header icon: online, machines running when some are stopped, offline, the machine's state", async () => {
+  const pills = (html) => [...html.match(/<span class="pills">([\s\S]*?)<\/span><\/div>/)[1].matchAll(/class="pill ([a-z]+)"[^>]*title="([^"]*)"/g)].map((m) => `${m[1]}:${m[2]}`);
+  assert.deepEqual(pills((await make(cards.ProxmoxCard, {}))._card()), ["st:Running: 7/10", "warn:Update available"]);
+  assert.deepEqual(pills((await make(cards.ProxmoxMiniCard, { node: "pve1" }))._card()), ["st:Running: 7/10", "warn:Update available"]);
+  const down = { ...hass(), states: { ...states, "sensor.pve1_status": { state: "offline", attributes: {} } } };
+  assert.deepEqual(pills((await make(cards.ProxmoxCard, {}, down))._card()), ["st:Offline", "warn:Update available"]);
+  assert.deepEqual(pills((await make(cards.ProxmoxGuestCard, { guest: 102 }))._card()), ["st:Running"]);
+  assert.deepEqual(pills((await make(cards.ProxmoxGuestMiniCard, { guest: 205 }))._card()), ["st:Stopped"]);
+  assert.deepEqual(pills((await make(cards.ProxmoxGuestMiniCard, { guests: [102, 202, 101] }))._card()), ["st:Running: 2/3"]);
 });
 
 test("no rewrite under a press: drawn by the click, or once released", async () => {
