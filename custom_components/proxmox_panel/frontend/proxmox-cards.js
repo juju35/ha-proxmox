@@ -41,7 +41,7 @@ import {
   proxmoxUptime,
 } from "./proxmox-common.js";
 
-export const PROXMOX_CARDS_VERSION = "1.3.0";
+export const PROXMOX_CARDS_VERSION = "1.4.0";
 const LANGUAGE_NAMES = {
   en: "English", fr: "Français", de: "Deutsch", es: "Español", sr: "Српски", "sr-Latn": "Srpski (latinica)", it: "Italiano",
   nl: "Nederlands", pt: "Português", pl: "Polski", ro: "Română", da: "Dansk", sv: "Svenska", bg: "Български", ru: "Русский",
@@ -141,6 +141,81 @@ const gaugeCurve = (points) => {
   return `<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path class="spark-a" d="${line}L100,30L${xy[0].split(",")[0]},30Z"/><path class="spark-l" d="${line}"/></svg>`;
 };
 
+// ── Illustrated header ──
+
+// The header's state: ok (running), warn (some machines stopped, suspended), idle (stopped), err (node down,
+// unavailable). It colours the icon, the rack's lights and its "PVE" tag.
+const SCENE_TAG = { ok: "#43a047", warn: "#f29d0b", idle: "#8a94a3", err: "#e5484d" };
+
+/** The state of a machine, and of several machines (the worst of them). */
+const guestScene = (statuses) => {
+  if (!statuses.length || statuses.includes("unavailable")) return "err";
+  if (statuses.every((s) => s === "running")) return "ok";
+  if (statuses.every((s) => s === "stopped")) return "idle";
+  return "warn";
+};
+
+/**
+ * The picture at the right of the banner, 110 × 80 above its 10 px ground strip: a server rack standing on the floor
+ * (six units, their status lights blinking), and its "PVE" tag in the state's colour. `dim` counts the units drawn
+ * stopped (warn); `tagLow` moves the tag under the zoom button of the mini cards; `uid` keeps the gradient of each card apart on a page with several cards.
+ */
+const rackSvg = (state, uid, dim = 1, tagLow = false) => {
+  const units = Array.from({ length: 6 }, (_, r) => {
+    const y = 13 + r * 10.6;
+    const off = state === "idle" || (state === "err" && r > 0) || (state === "warn" && r >= 6 - dim);
+    const led = state === "err" && r === 0 ? SCENE_TAG.err : off ? (state === "warn" ? SCENE_TAG.warn : "#59616e") : r % 2 ? "#2f80ed" : "#43c463";
+    const blink = !off ? ` class="px-blink" style="animation-delay:${(r * 0.2).toFixed(1)}s"` : "";
+    return `<rect class="px-unit${off ? " off" : ""}" x="38" y="${y}" width="32" height="8" rx="1.4"/><circle${blink} cx="42" cy="${y + 4}" r="1.2" fill="${led}"/>
+      <rect class="px-slot" x="46" y="${y + 3.2}" width="${12 + ((r * 7) % 10)}" height="1.6" rx=".8"/><rect class="px-slot" x="64" y="${y + 2}" width="3" height="4" rx=".6"/>`;
+  }).join("");
+  return `<svg class="px-scene" viewBox="0 0 110 80" preserveAspectRatio="xMaxYMax meet" aria-hidden="true" focusable="false">
+    <defs><linearGradient id="px-sheen-${uid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".1"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+    <rect class="px-rack" x="34" y="7" width="40" height="73" rx="3"/><rect x="34" y="7" width="40" height="73" rx="3" fill="url(#px-sheen-${uid})"/>
+    <rect class="px-top" x="38" y="9.2" width="32" height="1.4" rx=".7"/>${units}
+    <g transform="translate(88 ${tagLow ? 56 : 22})"><rect x="-12" y="-8" width="24" height="16" rx="3" fill="${SCENE_TAG[state]}"/><text y="3" text-anchor="middle" font-size="7" font-weight="700" fill="#fff" font-family="sans-serif">PVE</text></g>
+  </svg>`;
+};
+
+// The banner: 90 px high, a server room's wall, the rack at its right and a 10 px concrete strip edge to edge at its
+// bottom; the round icon, the title and the subtitle on the wall at its left. Day and night pictures.
+const BANNER_STYLE = `
+  ha-card { container-type:inline-size; }
+  .banner { --st:var(--tone-good); position:relative; overflow:hidden; height:90px; flex:none; margin:-14px -16px 0; color:#1b2533; background:#e3e8ef; }
+  .banner.night { color:#fff; background:#161c28; }
+  .banner.warn { --st:var(--tone-warn); } .banner.err { --st:var(--tone-bad); } .banner.idle { --st:#8a94a3; }
+  .px-ground { position:absolute; left:0; right:0; bottom:0; height:10px; background:#9aa1a9; box-shadow:inset 0 2px 0 #b5bbc2; }
+  .night .px-ground { background:#2c323b; box-shadow:inset 0 2px 0 #39404a; }
+  .px-scene { position:absolute; right:0; bottom:10px; height:80px; width:110px; }
+  .px-rack { fill:#2a3038; } .night .px-rack { fill:#262c35; stroke:#3a4352; stroke-width:.8; }
+  .px-top { fill:#3d4552; }
+  .px-unit { fill:#3d4552; } .px-unit.off { fill:#333a45; }
+  .px-slot { fill:#5c6678; } .err .px-rack, .idle .px-rack { fill:#2f343c; }
+  .px-blink { animation:px-blink 1.2s steps(2) infinite; }
+  @keyframes px-blink { 50% { opacity:.2; } }
+  @media (prefers-reduced-motion: reduce) { .px-blink { animation:none; } }
+  .htext { position:absolute; left:14px; top:0; bottom:10px; right:118px; display:flex; align-items:center; gap:10px; min-width:0; }
+  .htext .t { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .htext .tl { display:flex; flex-wrap:wrap; align-items:center; gap:2px 6px; min-width:0; }
+  .htext .n { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+  .htext .s { font-size:13px; color:#4a5768; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .night .htext .s { color:rgba(255,255,255,.78); }
+  .banner .badge { position:relative; color:var(--st); background:rgba(255,255,255,.62); box-shadow:inset 0 0 0 1px rgba(27,37,51,.12); }
+  .banner.night .badge { background:rgba(255,255,255,.12); box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); }
+  .banner .pill { background:rgba(255,255,255,.7); }
+  .banner.night .pill { background:rgba(10,16,28,.55); }
+  .banner.night .pill, .banner.night .pill.good, .banner.night .pill.warn, .banner.night .pill.bad { color:#fff; }
+  /* The Proxmox logo on a white tile at the icon's bottom right, readable on any theme. */
+  .brand { position:absolute; right:-4px; bottom:-4px; width:18px; height:18px; border-radius:5px; padding:2px; box-sizing:border-box;
+           display:grid; place-items:center; background:#fff; color:var(--px-accent); box-shadow:0 0 0 1px rgba(27,37,51,.16), 0 1px 3px rgba(27,37,51,.18); }
+  .brand .i { width:14px; height:14px; }
+  .banner .zoom { position:absolute; top:6px; right:6px; color:#1b2533; background:rgba(255,255,255,.6); border-color:transparent; }
+  .banner.night .zoom { color:#fff; background:rgba(10,16,28,.5); }
+  @container (max-width: 300px) { .px-scene { display:none; } .htext { right:40px; } }
+`;
+
+let bannerUid = 0;
+
 // ── Base card ──
 
 class ProxmoxBaseCard extends HTMLElement {
@@ -212,11 +287,13 @@ class ProxmoxBaseCard extends HTMLElement {
     .bars .bar > i { background:var(--c); }
     .block { display:flex; flex-direction:column; gap:12px; }
     .block + .block { border-top:1px solid var(--divider-color, rgba(127,127,127,.15)); padding-top:12px; }
+    ${BANNER_STYLE}
   `;
 
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    this._uid = ++bannerUid;
     this._history = {};
     this._confirm = null; // { entity, action, name }
     this._message = null; // { tone, text }
@@ -354,6 +431,33 @@ class ProxmoxBaseCard extends HTMLElement {
 
   _badge(name, muted) {
     return `<span class="badge${muted ? " muted" : ""}">${icon(name)}</span>`;
+  }
+
+  /** The illustrated header is shown unless `illustration: false` (the classic header then). */
+  _illustrated() {
+    return this._config.illustration !== false;
+  }
+
+  /** Night picture: forced by `illustration_theme`, else the sun below the horizon, else Home Assistant's dark mode. */
+  _night() {
+    const theme = this._config.illustration_theme;
+    if (theme === "night") return true;
+    if (theme === "day") return false;
+    const sun = this._hass?.states?.["sun.sun"]?.state;
+    if (sun === "below_horizon" || sun === "above_horizon") return sun === "below_horizon";
+    return !!this._hass?.themes?.darkMode;
+  }
+
+  /**
+   * The illustrated header: the round icon in the state's colour with the Proxmox logo on it, the title (and its
+   * pills) and the subtitle on the wall, the rack at the right, the zoom button (mini cards) at the top right.
+   */
+  _banner({ state, iconName, title, subtitle, pills = "", aside = "", dim = 1 }) {
+    const t = this._config.show_title === false ? "" : `<span class="n">${esc(title)}</span>`;
+    const s = this._config.show_subtitle === false || !subtitle ? "" : `<span class="s">${esc(subtitle)}</span>`;
+    const badge = `<span class="badge">${icon(iconName)}<span class="brand" title="Proxmox VE">${icon("logo")}</span></span>`;
+    return `<div class="banner ${state}${this._night() ? " night" : ""}"><div class="px-ground"></div>${rackSvg(state, this._uid, dim, !!aside)}
+      <div class="htext">${badge}<div class="t"><div class="tl">${t}${pills}</div>${s}</div></div>${aside}</div>`;
   }
 
   _button(item, action, label = true) {
@@ -635,23 +739,58 @@ export class ProxmoxCard extends ProxmoxBaseCard {
     const nodes = this._nodes();
     if (!nodes.length) return `<div class="note">${esc(this._t("c_no_node"))}</div>`;
     const notes = this._notes();
-    return `${notes}${nodes.map((n) => `<div class="block">${this._nodeHtml(n)}</div>`).join("")}`;
+    if (!this._illustrated()) return `${notes}${nodes.map((n) => `<div class="block">${this._nodeHtml(n)}</div>`).join("")}`;
+    // Illustrated: one node in the banner; several under a banner summing them up, each keeping its own header
+    if (nodes.length === 1) return `${this._nodeBanner(nodes[0])}${notes}<div class="block">${this._nodeHtml(nodes[0], true)}</div>`;
+    return `${this._nodesBanner(nodes)}${notes}${nodes.map((n) => `<div class="block">${this._nodeHtml(n)}</div>`).join("")}`;
   }
 
-  _nodeHtml(node) {
-    const lang = this._lang();
-    const e = node.entities;
+  /** The banner's state over nodes: down when one is offline, a warning when some machines are stopped, else running. */
+  _sceneOf(nodes) {
+    const ids = new Set(nodes.map((n) => n.id));
+    const guests = [...this._items("vm"), ...this._items("container")].filter((g) => ids.has(g.node)).map((g) => proxmoxStatus(this._hass, g));
+    const stopped = guests.filter((s) => s !== "running").length;
+    const down = nodes.some((n) => proxmoxStatus(this._hass, n) !== "online");
+    return {
+      state: down ? "err" : stopped ? "warn" : "ok",
+      dim: guests.length ? Math.min(5, Math.max(1, Math.round((6 * stopped) / guests.length))) : 1,
+    };
+  }
+
+  _nodeBanner(node, aside = "") {
     const status = proxmoxStatus(this._hass, node);
-    const update = proxmoxState(this._hass, e.update);
-    const uptime = proxmoxUptime(this._hass, e.uptime);
-    const sub = [
-      uptime !== null && status === "online" ? this._t("up_for", { d: proxmoxPanelDuration(uptime, lang) }) : "",
+    return this._banner({ ...this._sceneOf([node]), iconName: "server", title: this._titleFor(node.name), subtitle: this._nodeSub(node, status), pills: this._nodePills(node, status), aside });
+  }
+
+  _nodesBanner(nodes, aside = "") {
+    const guests = [...this._items("vm"), ...this._items("container")].filter((g) => nodes.some((n) => n.id === g.node));
+    const running = guests.filter((g) => proxmoxStatus(this._hass, g) === "running").length;
+    const subtitle = `${this._t("c_nodes", { n: nodes.length })} · ${this._t("c_running", { running, n: guests.length })}`;
+    return this._banner({ ...this._sceneOf(nodes), iconName: "server", title: this._config.title || this._t("title"), subtitle, aside });
+  }
+
+  _nodeSub(node, status) {
+    const update = proxmoxState(this._hass, node.entities.update);
+    const uptime = proxmoxUptime(this._hass, node.entities.uptime);
+    return [
+      uptime !== null && status === "online" ? this._t("up_for", { d: proxmoxPanelDuration(uptime, this._lang()) }) : "",
       update?.attributes?.installed_version ? `PVE ${update.attributes.installed_version}` : "",
     ]
       .filter(Boolean)
       .join(" · ");
-    const pills = `${update?.state === "on" ? `<button class="pill warn" data-action="more-info" data-entity="${esc(e.update)}">${esc(this._t("update"))}</button>` : ""}${proxmoxStatusPill(lang, status)}`;
-    const parts = [this._head(this._badge("logo", status !== "online"), this._titleFor(node.name), sub, pills), this._rings(e)];
+  }
+
+  _nodePills(node, status) {
+    const e = node.entities;
+    const update = proxmoxState(this._hass, e.update)?.state === "on";
+    return `${update ? `<button class="pill warn" data-action="more-info" data-entity="${esc(e.update)}">${esc(this._t("update"))}</button>` : ""}${proxmoxStatusPill(this._lang(), status)}`;
+  }
+
+  _nodeHtml(node, bannered = false) {
+    const lang = this._lang();
+    const e = node.entities;
+    const status = proxmoxStatus(this._hass, node);
+    const parts = [bannered ? "" : this._head(this._badge("logo", status !== "online"), this._titleFor(node.name), this._nodeSub(node, status), this._nodePills(node, status)), this._rings(e)];
     // Proxmox Extended Sensors: the node's temperature and health under the rings (juju35/ha-proxmox#14)
     parts.push(proxmoxHealthBand(this._hass, lang, node));
     if (this._config.show_vms !== false) parts.push(this._guestList(node, "vm"));
@@ -736,10 +875,15 @@ export class ProxmoxMiniCard extends Zoomable(ProxmoxCard) {
       const update = proxmoxState(this._hass, n.entities.update)?.state === "on"
         ? `<button class="pill warn" data-action="more-info" data-entity="${esc(n.entities.update)}">${esc(this._t("update"))}</button>`
         : "";
-      const head = this._head(this._badge("logo", status !== "online"), this._titleFor(n.name), this._counts(n), `${update}${status === "online" ? "" : proxmoxStatusPill(this._lang(), status)}${this._zoomButton()}`);
+      const pills = `${update}${status === "online" ? "" : proxmoxStatusPill(this._lang(), status)}`;
+      const head = this._illustrated()
+        ? this._banner({ ...this._sceneOf([n]), iconName: "server", title: this._titleFor(n.name), subtitle: this._counts(n), pills, aside: this._zoomButton() })
+        : this._head(this._badge("logo", status !== "online"), this._titleFor(n.name), this._counts(n), `${pills}${this._zoomButton()}`);
       return `${head}${this._notes()}${this._miniBars(n.entities)}`;
     }
-    const head = this._head(this._badge("logo", worst), this._config.title || this._t("title"), sub, this._zoomButton());
+    const head = this._illustrated()
+      ? this._nodesBanner(nodes, this._zoomButton())
+      : this._head(this._badge("logo", worst), this._config.title || this._t("title"), sub, this._zoomButton());
     const rows = nodes.map((n) => {
       const status = proxmoxStatus(this._hass, n);
       return `<div class="row"><span class="dot ${status}"></span>
@@ -803,7 +947,37 @@ export class ProxmoxGuestCard extends ProxmoxBaseCard {
     const blocks = guests.map(({ key, item }) =>
       item ? `<div class="block">${this._guestHtml(item)}</div>` : `<div class="note bad">${esc(this._t("c_guest_missing", { guest: key }))}</div>`,
     );
-    return `${this._notes()}${blocks.join("")}`;
+    if (!this._illustrated()) return `${this._notes()}${blocks.join("")}`;
+    // Illustrated: one machine in the banner; several under a banner summing them up, each keeping its own header
+    if (guests.length === 1 && guests[0].item) return `${this._guestBanner(guests[0].item)}${this._notes()}<div class="block">${this._guestHtml(guests[0].item, true)}</div>`;
+    return `${this._guestsBanner(guests)}${this._notes()}${blocks.join("")}`;
+  }
+
+  _guestBanner(g, aside = "") {
+    const status = proxmoxStatus(this._hass, g);
+    return this._banner({
+      state: guestScene([status]),
+      iconName: g.kind === "vm" ? "vm" : "container",
+      title: this._titleFor(g.name),
+      subtitle: this._subtitle(g, status),
+      pills: proxmoxStatusPill(this._lang(), status),
+      aside,
+    });
+  }
+
+  /** Several machines: the worst state of them (a machine not found counts as unavailable), the number running. */
+  _guestsBanner(guests, aside = "") {
+    const statuses = guests.map(({ item }) => (item ? proxmoxStatus(this._hass, item) : "unavailable"));
+    const running = statuses.filter((s) => s === "running").length;
+    const kinds = new Set(guests.map(({ item }) => item?.kind).filter(Boolean));
+    return this._banner({
+      state: guestScene(statuses),
+      iconName: kinds.size === 1 && kinds.has("container") ? "container" : "vm",
+      title: this._config.title || this._t("title"),
+      subtitle: this._t("c_running", { running, n: statuses.length }),
+      dim: Math.min(5, Math.max(1, Math.round((6 * (statuses.length - running)) / Math.max(1, statuses.length)))),
+      aside,
+    });
   }
 
   _subtitle(g, status) {
@@ -819,11 +993,11 @@ export class ProxmoxGuestCard extends ProxmoxBaseCard {
       .join(" · ");
   }
 
-  _guestHtml(g) {
+  _guestHtml(g, bannered = false) {
     const lang = this._lang();
     const e = g.entities;
     const status = proxmoxStatus(this._hass, g);
-    const parts = [this._head(this._badge(g.kind === "vm" ? "vm" : "container", status !== "running"), this._titleFor(g.name), this._subtitle(g, status), proxmoxStatusPill(lang, status))];
+    const parts = [bannered ? "" : this._head(this._badge(g.kind === "vm" ? "vm" : "container", status !== "running"), this._titleFor(g.name), this._subtitle(g, status), proxmoxStatusPill(lang, status))];
     if (status === "running") parts.push(this._rings(e));
     else {
       const facts = [];
@@ -865,6 +1039,15 @@ export class ProxmoxGuestMiniCard extends Zoomable(ProxmoxGuestCard) {
     const guests = this._guests();
     if (!guests.length) return `<div class="note">${esc(this._t("c_no_guest"))}</div>`;
     const lang = this._lang();
+    const illustrated = this._illustrated();
+    if (illustrated && guests.length === 1 && guests[0].item) {
+      // One machine: in the banner, its bars (running) or its quick actions under it
+      const g = guests[0].item;
+      const status = proxmoxStatus(this._hass, g);
+      const quick = status === "running" ? "" : this._quick(g).map((a) => this._button(g, a)).join("");
+      const body = status === "running" ? this._miniBars({ ...g.entities, disk: null, max_disk: null }) : quick ? `<div class="acts">${quick}</div>` : "";
+      return `${this._guestBanner(g, this._zoomButton())}${this._notes()}${body}`;
+    }
     const rows = guests.map(({ key, item: g }, i) => {
       if (!g) return `<div class="note bad">${esc(this._t("c_guest_missing", { guest: key }))}</div>`;
       const status = proxmoxStatus(this._hass, g);
@@ -874,9 +1057,10 @@ export class ProxmoxGuestMiniCard extends Zoomable(ProxmoxGuestCard) {
       return `<div class="head"${i ? ' style="border-top:1px solid var(--divider-color, rgba(127,127,127,.15));padding-top:10px"' : ""}>
           ${this._badge(g.kind === "vm" ? "vm" : "container", status !== "running")}
           <div class="t"><div style="display:flex;align-items:center;gap:6px;min-width:0">${title}${proxmoxStatusPill(lang, status)}</div>${body}</div>
-          ${quick}${i === 0 ? this._zoomButton() : ""}</div>`;
+          ${quick}${i === 0 && !illustrated ? this._zoomButton() : ""}</div>`;
     });
-    return `${this._notes()}<div class="block" style="gap:10px">${rows.join("")}</div>`;
+    const banner = illustrated ? this._guestsBanner(guests, this._zoomButton()) : "";
+    return `${banner}${this._notes()}<div class="block" style="gap:10px">${rows.join("")}</div>`;
   }
 }
 
@@ -884,11 +1068,11 @@ export class ProxmoxGuestMiniCard extends Zoomable(ProxmoxGuestCard) {
 
 class ProxmoxEditorBase extends HTMLElement {
   static get toggles() {
-    return ["show_title", "show_subtitle"];
+    return ["illustration", "show_title", "show_subtitle"];
   }
 
   static get defaults() {
-    return {};
+    return { illustration_theme: "auto" };
   }
 
   setConfig(config) {
@@ -925,6 +1109,10 @@ class ProxmoxEditorBase extends HTMLElement {
       { name: "title", selector: { text: {} } },
       ...this._fields(),
       { type: "grid", name: "", schema: this.constructor.toggles.map((name) => ({ name, selector: { boolean: {} } })) },
+      {
+        name: "illustration_theme",
+        selector: { select: { mode: "dropdown", options: ["auto", "day", "night"].map((v) => ({ value: v, label: this._t(`e_theme_${v}`) })) } },
+      },
       this._languageField(),
     ];
   }
@@ -980,11 +1168,11 @@ class ProxmoxEditorBase extends HTMLElement {
 
 class ProxmoxCardEditor extends ProxmoxEditorBase {
   static get toggles() {
-    return ["show_vms", "show_containers", "show_storage", "show_stopped", "show_history", "show_actions", "show_title", "show_subtitle"];
+    return ["illustration", "show_vms", "show_containers", "show_storage", "show_stopped", "show_history", "show_actions", "show_title", "show_subtitle"];
   }
 
   static get defaults() {
-    return { max_items: 5, collapsed: false };
+    return { ...super.defaults, max_items: 5, collapsed: false };
   }
 
   _nodeField() {
@@ -1026,7 +1214,7 @@ class ProxmoxMiniCardEditor extends ProxmoxCardEditor {
 
 class ProxmoxGuestCardEditor extends ProxmoxEditorBase {
   static get toggles() {
-    return ["show_network", "show_history", "show_actions", "show_title", "show_subtitle"];
+    return ["illustration", "show_network", "show_history", "show_actions", "show_title", "show_subtitle"];
   }
 
   _fields() {
@@ -1056,7 +1244,7 @@ class ProxmoxGuestCardEditor extends ProxmoxEditorBase {
 
 class ProxmoxGuestMiniCardEditor extends ProxmoxGuestCardEditor {
   static get toggles() {
-    return ["zoom", "show_network", "show_history", "show_actions", "show_title", "show_subtitle"];
+    return ["zoom", "illustration", "show_network", "show_history", "show_actions", "show_title", "show_subtitle"];
   }
 }
 

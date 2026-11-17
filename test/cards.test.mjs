@@ -204,9 +204,41 @@ test("title: replaces the name of a single node or machine, and the mini card's 
   assert.match(mini._card(), /class="n">Homelab</);
   const guest = await make(cards.ProxmoxGuestCard, { guest: 102, title: "Docker" });
   assert.match(guest._card(), /class="n">Docker</);
-  // Several machines: each keeps its name
+  // Several machines: each keeps its name, the title goes on the banner summing them up (none without it)
   const two = await make(cards.ProxmoxGuestCard, { guests: [100, 102], title: "Docker" });
-  assert.doesNotMatch(two._card(), /class="n">Docker</);
+  assert.match(two._card(), /class="banner[^"]*">[\s\S]*?class="n">Docker</);
+  const classic = await make(cards.ProxmoxGuestCard, { guests: [100, 102], title: "Docker", illustration: false });
+  assert.doesNotMatch(classic._card(), /class="n">Docker</);
+});
+
+test("illustrated header: rack in the state's colour, night, classic header with illustration: false", async () => {
+  // pve1 online with some machines stopped: a warning, the server icon with the Proxmox logo on it
+  const node = await make(cards.ProxmoxCard, {});
+  let html = node._card();
+  assert.match(html, /class="banner warn"/);
+  assert.match(html, /class="brand"/);
+  assert.match(html, /class="px-scene"/);
+  assert.equal((html.match(/class="head"/g) || []).length, 0, "the banner replaces the node's header");
+  // Unique gradient ids per card
+  const other = await make(cards.ProxmoxCard, {});
+  assert.notEqual(html.match(/px-sheen-\d+/)[0], other._card().match(/px-sheen-\d+/)[0]);
+  // Night: forced, else the sun
+  assert.match((await make(cards.ProxmoxCard, { illustration_theme: "night" }))._card(), /class="banner warn night"/);
+  const sunDown = hass();
+  sunDown.states = { ...states, "sun.sun": { state: "below_horizon", attributes: {} } };
+  assert.match((await make(cards.ProxmoxCard, {}, sunDown))._card(), /night/);
+  assert.doesNotMatch((await make(cards.ProxmoxCard, { illustration_theme: "day" }, sunDown))._card(), /banner[^"]*night/);
+  // A running machine, a stopped one
+  assert.match((await make(cards.ProxmoxGuestCard, { guest: 102 }))._card(), /class="banner ok"/);
+  assert.match((await make(cards.ProxmoxGuestCard, { guest: 205 }))._card(), /class="banner idle"/);
+  // Node down
+  const down = hass();
+  down.states = { ...states, "sensor.pve1_status": { state: "offline", attributes: {} } };
+  assert.match((await make(cards.ProxmoxMiniCard, { node: "pve1" }, down))._card(), /class="banner err"/);
+  // Classic header
+  html = (await make(cards.ProxmoxCard, { illustration: false }))._card();
+  assert.doesNotMatch(html, /class="banner/);
+  assert.match(html, /class="head"/);
 });
 
 test("sections: a click folds and unfolds; collapsed starts folded and a tap elsewhere folds them again (#7)", async () => {

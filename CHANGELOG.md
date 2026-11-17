@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0 - 2026-11-17
+
+### Features
+- **Illustrated header** on the four cards (full and mini): a 90 px banner with a server rack on a concrete floor strip, its status lights blinking, and a "PVE" tag in the state's colour — running (all machines up), a warning when some machines are stopped or suspended, grey for a stopped machine, red when the node is down or unavailable. The round icon (server, VM or container) takes the state's colour and carries the Proxmox logo. A night picture follows `sun.sun` (else the dark theme), forced with `illustration_theme: day | night`; `illustration: false` brings the classic header back. Both options are in the visual editors.
+
 ## 1.3.0 - 2026-11-15
 
 ### Features

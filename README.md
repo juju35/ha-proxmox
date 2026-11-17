@@ -26,7 +26,7 @@ Home Assistant integration that adds a **Proxmox** panel to the sidebar and **Pr
 - **Confirmation** before the actions that stop or restart something (stop, shut down, reset, restart, hibernate, node-wide actions), at the top of the list
 - **Settings**: stopped machines shown or not, the confirmation, inactive storage hidden
 - **Administrators only**: the panel and its commands are kept for administrators
-- **Cards** for your dashboards, seen by every user: a node card (`proxmox-card`) and its mini card, a virtual machine or container card (`proxmox-guest-card`) and its mini card, with the visual editor; their actions are offered to administrators only
+- **Cards** for your dashboards, seen by every user: a node card (`proxmox-card`) and its mini card, a virtual machine or container card (`proxmox-guest-card`) and its mini card, with an illustrated header (a server rack whose lights follow the state, day and night) and the visual editor; their actions are offered to administrators only
 - The **Proxmox logo** as the sidebar icon
 - Light and dark themes, phones and desktops, 22 languages
 - No connection to Proxmox of its own: the panel reads the entities of the Proxmox VE integration and presses its buttons, with the permissions you gave it
@@ -123,6 +123,8 @@ CPU, RAM and disk are drawn as on System Hub's System Monitor card and the NAS c
 | `title` | the node's name | The header's title (with a single node; with `node: all` each node keeps its name) |
 | `show_title` | `true` | The node's name in the header |
 | `show_subtitle` | `true` | Uptime and Proxmox VE version under it |
+| `illustration` | `true` | `false`: the classic header instead of the illustrated banner (server rack, lights and tag in the state's colour) |
+| `illustration_theme` | `auto` | `day` or `night` forces the banner's picture; `auto` follows `sun.sun`, else the dark theme |
 | `language` | Home Assistant's | One of the 22 languages below |
 
 ### Node mini card
@@ -131,7 +133,7 @@ CPU, RAM and disk are drawn as on System Hub's System Monitor card and the NAS c
 type: custom:proxmox-mini-card
 ```
 
-One line per node with its CPU, RAM and disk bars and the machines running (`node:` keeps one, then its counts become the subtitle). The round button at the top right (`zoom: false` removes it) shows the node card in its place, with the same options; a click anywhere outside the card brings the compact view back. Options: `node`, `title` (the header's, over several nodes; else the node's), `zoom`, `show_title`, `show_subtitle`, `language`, and those of the node card for the zoomed view (`show_vms`, `show_containers`, `show_storage`, `show_stopped`, `show_history`, `show_actions`, `max_items`, `collapsed`), which can be set on the mini card too, in YAML or in its visual editor.
+One line per node with its CPU, RAM and disk bars and the machines running (`node:` keeps one, then its counts become the subtitle). The round button at the top right (`zoom: false` removes it) shows the node card in its place, with the same options; a click anywhere outside the card brings the compact view back. Options: `node`, `title` (the header's, over several nodes; else the node's), `zoom`, `show_title`, `show_subtitle`, `illustration`, `illustration_theme`, `language`, and those of the node card for the zoomed view (`show_vms`, `show_containers`, `show_storage`, `show_stopped`, `show_history`, `show_actions`, `max_items`, `collapsed`), which can be set on the mini card too, in YAML or in its visual editor.
 
 ### Virtual machine or container card
 
@@ -149,6 +151,8 @@ guest: 102          # a VMID; guests: [100, 202] stacks several machines
 | `title` | the machine's name | The header's title (with a single machine) |
 | `show_title` | `true` | The machine's name in the header |
 | `show_subtitle` | `true` | `VM 102 · pve1 · Up for 12 days` under it |
+| `illustration` | `true` | The banner with the rack: green while running, grey when stopped, amber when suspended, red when unavailable; `false` for the classic header |
+| `illustration_theme` | `auto` | Day or night picture of the banner (`auto`: the sun, else the dark theme) |
 | `language` | Home Assistant's | One of the 22 languages below |
 
 A running machine shows its CPU, RAM and disk gauges (24-hour curves behind CPU and RAM); a stopped one its CPUs, RAM and disk size.
