@@ -84,10 +84,28 @@ test("the banner's status pill follows the header icon: online, machines running
   assert.deepEqual(pills((await make(cards.ProxmoxGuestCard, { guest: 102 }))._card()), ["st:Running"]);
   assert.deepEqual(pills((await make(cards.ProxmoxGuestMiniCard, { guest: 205 }))._card()), ["st:Stopped"]);
   assert.deepEqual(pills((await make(cards.ProxmoxGuestMiniCard, { guests: [102, 202, 101] }))._card()), ["st:Running: 2/3"]);
-  // The status pill on the title row, the other ones apart (beside it when wide, else on the subtitle's line)
+  // The status pill right after the title, then the other ones (the card measures whether they fit there)
   const html = (await make(cards.ProxmoxMiniCard, { node: "pve1" }))._card();
-  assert.match(html, /<div class="tl"><span class="n">pve1<\/span><span class="pills"><span class="pill st"[\s\S]*?<\/span><\/span><\/div><span class="pills more"><button class="pill warn"/);
+  assert.match(html, /<div class="tl"><span class="n">pve1<\/span><span class="pills"><span class="pill st"[\s\S]*?<\/span><\/span><span class="pills more"><button class="pill warn"[\s\S]*?<\/button><\/span><\/div>/);
   assert.doesNotMatch((await make(cards.ProxmoxGuestCard, { guest: 102 }))._card(), /pills more/);
+});
+
+test("the pills sit after the whole title or under the subtitle, decided by measure, never by a fixed width", async () => {
+  const style = cards.ProxmoxCard.STYLE;
+  // Beside the title by default; the other pills, then all of them, on a line under the subtitle; their dots only.
+  assert.match(style, /\.t \{[^}]*grid-template-areas:"n p m \." "s s s s"/);
+  assert.match(style, /\.t\.more-below \{ grid-template-areas:"n p \. \." "s s s s" "m m m m"; \}/);
+  assert.match(style, /\.t\.below \{ grid-template-areas:"n n n n" "s s s s" "p m \. \."; \}/);
+  assert.match(style, /\.t\.dot-only \.pill \.txt \{ position:absolute;/);
+  // The only width rule left for the pills: their dots only on a card of 200 px or less.
+  assert.doesNotMatch(style, /px-head \(max-width/);
+  assert.match(style, /@container \(max-width: 200px\) \{ \.banner \.pill \{ padding:4px; \}/);
+  // The classic header puts its pills in the same title row.
+  const classic = (await make(cards.ProxmoxGuestCard, { guest: 102, illustration: false }))._card();
+  assert.match(classic, /<div class="t"><div class="tl"><span class="n">[^<]*<\/span><span class="pills"><span class="pill good">/);
+  // A card that fits nothing never throws in a page without layout (no getComputedStyle): the measure just stops.
+  const el = await make(cards.ProxmoxCard, {});
+  assert.doesNotThrow(() => el._fitPill());
 });
 
 test("no rewrite under a press: drawn by the click, or once released", async () => {

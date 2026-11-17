@@ -216,27 +216,7 @@ const BANNER_STYLE = `
   @media (prefers-reduced-motion: reduce) { .px-blink, .px-cable::after { animation:none !important; } }
   .htext { position:absolute; left:14px; top:0; bottom:10px; right:118px; display:flex; align-items:center; gap:10px; min-width:0; }
   .htext { container:px-head / inline-size; }
-  /* The text: the title row (the title, ellipsised first, never under 5 characters, then the status pill centred on
-     it), the other pills (an update) beside it, the subtitle under them. */
-  .htext .t { flex:1; min-width:0; display:grid; grid-template-columns:minmax(0,max-content) auto minmax(0,1fr);
-              grid-template-areas:"tl more ." "s s s"; column-gap:4px; row-gap:2px; align-items:center; justify-items:start; }
-  .htext .tl { grid-area:tl; display:flex; align-items:center; gap:8px; min-width:0; max-width:100%; }
-  .htext .n { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:0 1 auto; min-width:0; }
-  .htext .pills { display:flex; flex-wrap:wrap; align-items:center; gap:4px; flex:none; max-width:calc(100% - 56px); }
-  .htext .more { grid-area:more; max-width:100%; }
-  .htext .s { grid-area:s; justify-self:stretch; }
-  /* Two pills, no room for both beside the title: the other ones on the subtitle's line, after it (their dots only
-     when narrower), so the text never reaches the floor strip. */
-  @container px-head (max-width: 380px) { .t.pp2 { grid-template-areas:"tl tl tl" "s more ."; column-gap:6px; } .t.pp2 .s { justify-self:start; max-width:100%; } }
-  @container px-head (max-width: 300px) { .t.pp2 .more .pill { padding:4px; }
-    .t.pp2 .more .pill .txt { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }
-  /* Narrow card: the pills on their own line under the subtitle; very narrow: their dots only, the labels kept in
-     their title and for screen readers. */
-  @container px-head (max-width: 215px) { .htext .t { grid-template-areas:"n n n" "s s s" "p more ."; }
-    .htext .tl { display:contents; } .htext .n { grid-area:n; max-width:100%; } .htext .tl .pills { grid-area:p; max-width:100%; margin-top:2px; }
-    .t.pp2 .more { margin-top:2px; } }
-  @container px-head (max-width: 150px) { .banner .pill { padding:4px; }
-    .banner .pill .txt { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }
+  .htext .n { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .htext .s { font-size:13px; color:#4a5768; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .night .htext .s { color:rgba(255,255,255,.78); }
   .banner .badge { position:relative; color:var(--st); background:rgba(255,255,255,.62); box-shadow:inset 0 0 0 1px rgba(27,37,51,.12); }
@@ -272,7 +252,28 @@ class ProxmoxBaseCard extends HTMLElement {
     .head { display:flex; align-items:center; gap:12px; }
     /* The title keeps room for a few characters: without it, the pills go to a line of their own. */
     .head { flex-wrap:wrap; row-gap:6px; }
-    .head .t { flex:1; min-width:min(6ch, 100%); display:flex; flex-direction:column; gap:2px; }
+    /* The text (both headers): the title, then the status pill and the other pills (an update) right after it, only
+       when the whole title and the whole pills fit there (measured by the card, see _fitPill); else the other pills,
+       then all of them, take a line of their own under the subtitle; when even that does not fit, their dots only
+       (the labels kept in their title and for screen readers). */
+    .t { flex:1; min-width:0; display:grid; grid-template-columns:minmax(0,max-content) max-content max-content minmax(0,1fr);
+         grid-template-areas:"n p m ." "s s s s"; column-gap:0; row-gap:2px; align-items:center; justify-items:start; }
+    .t .tl { display:contents; }
+    .t .n { grid-area:n; max-width:100%; min-width:0; }
+    .t .tl > .pills { grid-area:p; display:flex; align-items:center; gap:4px; flex:none; margin-left:8px; }
+    .t .tl > .pills.more { grid-area:m; }
+    .t .s { grid-area:s; justify-self:stretch; min-width:0; }
+    .t.more-below { grid-template-areas:"n p . ." "s s s s" "m m m m"; }
+    .t.below { grid-template-areas:"n n n n" "s s s s" "p m . ."; }
+    .t.below .n { justify-self:stretch; }
+    .t.below .tl > .pills, .t.more-below .tl > .more { margin-top:2px; }
+    .t.below .tl > .pills:not(.more), .t.more-below .tl > .more, .t .tl > .pills:first-child { margin-left:0; }
+    .t.dot-only .pill { padding:4px; }
+    .t.dot-only .pill .txt { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+    .head .t.dot-only .pill { font-size:0; line-height:0; }
+    .head .t.dot-only .pill::before { content:""; display:block; width:6px; height:6px; border-radius:50%; background:currentColor; }
+    @container (max-width: 200px) { .banner .pill { padding:4px; }
+      .banner .pill .txt { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; } }
     .head .n { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .head .s { font-size:12px; color:var(--secondary-text-color); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .zoom { all:unset; display:grid; place-items:center; width:32px; height:32px; border-radius:50%; cursor:pointer; flex:none;
@@ -366,8 +367,29 @@ class ProxmoxBaseCard extends HTMLElement {
     });
   }
 
+  connectedCallback() {
+    // A new width (or the web font loaded): the status pill is fitted again, in the next frame.
+    if (typeof ResizeObserver === "function") {
+      this._resize ??= new ResizeObserver((entries) => {
+        const w = Math.round(entries.at(-1).contentRect.width);
+        if (w === this._fitWidth) return;
+        this._fitWidth = w;
+        cancelAnimationFrame(this._fitFrame);
+        this._fitFrame = requestAnimationFrame(() => this._fitPill());
+      });
+      this._resize.observe(this);
+    }
+    document.fonts?.ready?.then(() => this._fitPill());
+    // A font loaded later (another script's glyphs): the texts change width without the card resizing.
+    this._onFonts ??= () => this._fitPill();
+    document.fonts?.addEventListener?.("loadingdone", this._onFonts);
+  }
+
   disconnectedCallback() {
     proxmoxReleasePress(this);
+    document.fonts?.removeEventListener?.("loadingdone", this._onFonts);
+    this._resize?.disconnect();
+    this._fitWidth = null;
   }
 
   setConfig(config) {
@@ -447,6 +469,54 @@ class ProxmoxBaseCard extends HTMLElement {
     if (!force && html === this._last) return;
     this._last = html;
     this.shadowRoot.innerHTML = `<style>${this.constructor.STYLE}</style><ha-card>${html}</ha-card>`;
+    this._fitPill();
+  }
+
+  /**
+   * The status pill, then the other pills (an update), go right after the title only when the whole title and their
+   * whole labels fit there; otherwise the other pills (.more-below), then all of them (.below), take a line of their
+   * own under the subtitle (kept to one line). When the labels do not fit that line either, or the banner has no
+   * room for the lines above its floor strip, the pills keep their dots only (.dot-only, back beside the title when
+   * the dots fit there). Measured after render, so that it holds in every language.
+   */
+  _fitPill() {
+    const root = this.shadowRoot;
+    if (!root?.querySelectorAll || typeof getComputedStyle !== "function") return;
+    for (const t of root.querySelectorAll(".t")) {
+      const groups = [...t.querySelectorAll(".tl > .pills")];
+      t.classList.remove("below", "more-below", "dot-only");
+      if (!groups.length || !groups[0].getClientRects().length) continue;
+      const name = t.querySelector(".tl > .n");
+      const gap = 8;
+      const fits = (n) => {
+        let w = 0;
+        if (name) {
+          const range = document.createRange();
+          range.selectNodeContents(name);
+          w = Math.max(name.scrollWidth, range.getBoundingClientRect().width) + gap;
+        }
+        for (const g of groups.slice(0, n)) w += g.getBoundingClientRect().width + gap;
+        return w - gap <= t.getBoundingClientRect().width + 0.5;
+      };
+      const place = () => {
+        if (fits(groups.length)) return;
+        if (groups.length > 1 && fits(1)) t.classList.add("more-below");
+        else t.classList.add("below");
+      };
+      place();
+      if (!t.classList.contains("below") && !t.classList.contains("more-below")) continue;
+      const sub = t.querySelector(".s");
+      if (sub) sub.title = sub.scrollWidth > sub.clientWidth ? sub.textContent.trim() : "";
+      const banner = t.closest(".banner");
+      const tb = t.getBoundingClientRect();
+      const bb = banner?.getBoundingClientRect();
+      const tall = !!bb && (tb.top < bb.top - 0.5 || tb.bottom > bb.bottom - 10 + 0.5);
+      const wide = groups.some((g) => g.scrollWidth > tb.width + 0.5 || g.getBoundingClientRect().right > tb.right + 0.5);
+      if (!tall && !wide) continue;
+      t.classList.remove("below", "more-below");
+      t.classList.add("dot-only");
+      place();
+    }
   }
 
   _card() {
@@ -482,7 +552,7 @@ class ProxmoxBaseCard extends HTMLElement {
   _head(badge, title, subtitle, aside) {
     const t = this._config.show_title === false ? "" : `<span class="n">${esc(title)}</span>`;
     const s = this._config.show_subtitle === false || !subtitle ? "" : `<span class="s">${esc(subtitle)}</span>`;
-    return `<div class="head">${badge}<div class="t">${t}${s}</div>${aside}</div>`;
+    return `<div class="head">${badge}<div class="t"><div class="tl">${t}${aside ? `<span class="pills">${aside}</span>` : ""}</div>${s}</div></div>`;
   }
 
   _badge(name, muted) {
@@ -517,7 +587,7 @@ class ProxmoxBaseCard extends HTMLElement {
     const p = pills.filter(Boolean);
     const badge = `<span class="badge">${icon(iconName)}<span class="brand" title="Proxmox VE">${icon("logo")}</span></span>`;
     return `<div class="banner ${state}${this._night() ? " night" : ""}"><div class="px-ground"></div>${uplinkHtml(state)}${rackSvg(state, this._uid, dim, !!aside)}
-      <div class="htext">${badge}<div class="t${p.length > 1 ? " pp2" : ""}"><div class="tl">${t}${p.length ? `<span class="pills">${p[0]}</span>` : ""}</div>${p.length > 1 ? `<span class="pills more">${p.slice(1).join("")}</span>` : ""}${s}</div></div>${aside}</div>`;
+      <div class="htext">${badge}<div class="t"><div class="tl">${t}${p.length ? `<span class="pills">${p[0]}</span>` : ""}${p.length > 1 ? `<span class="pills more">${p.slice(1).join("")}</span>` : ""}</div>${s}</div></div>${aside}</div>`;
   }
 
   /** The banner's status pill: a dot and `text` in the colour of the header icon. */
