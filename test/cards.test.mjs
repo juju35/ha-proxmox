@@ -67,8 +67,53 @@ test("mini card: one line per node, zoom to the full card", async () => {
   card._zoomed = true;
   html = card._card();
   assert.match(html, /class="gauges"/);
+  // The expanded view keeps the button (collapse), in the banner's corner like the compact view's.
+  assert.match(html, /class="banner[^"]*">[\s\S]*<button class="zoom" data-action="zoom"[^>]*aria-label="Back to the compact view"/);
+  card._config = { ...card._config, illustration: false };
+  assert.match(card._card(), /^<button class="zoom plain" data-action="zoom"/);
   const noZoom = await make(cards.ProxmoxMiniCard, { zoom: false });
   assert.doesNotMatch(noZoom._card(), /data-action="zoom"/);
+});
+
+test("the banner's status pill follows the header icon: online, machines running when some are stopped, offline, the machine's state", async () => {
+  const pills = (html) => [...html.match(/<div class="htext">([\s\S]*?)<\/div><\/div>/)[1].matchAll(/class="pill ([a-z]+)"[^>]*title="([^"]*)"/g)].map((m) => `${m[1]}:${m[2]}`);
+  assert.deepEqual(pills((await make(cards.ProxmoxCard, {}))._card()), ["st:Running: 7/10", "warn:Update available"]);
+  assert.deepEqual(pills((await make(cards.ProxmoxMiniCard, { node: "pve1" }))._card()), ["st:Running: 7/10", "warn:Update available"]);
+  const down = { ...hass(), states: { ...states, "sensor.pve1_status": { state: "offline", attributes: {} } } };
+  assert.deepEqual(pills((await make(cards.ProxmoxCard, {}, down))._card()), ["st:Offline", "warn:Update available"]);
+  assert.deepEqual(pills((await make(cards.ProxmoxGuestCard, { guest: 102 }))._card()), ["st:Running"]);
+  assert.deepEqual(pills((await make(cards.ProxmoxGuestMiniCard, { guest: 205 }))._card()), ["st:Stopped"]);
+  assert.deepEqual(pills((await make(cards.ProxmoxGuestMiniCard, { guests: [102, 202, 101] }))._card()), ["st:Running: 2/3"]);
+  // The status pill right after the title, then the other ones (the card measures whether they fit there)
+  const html = (await make(cards.ProxmoxMiniCard, { node: "pve1" }))._card();
+  assert.match(html, /<div class="tl"><span class="n">pve1<\/span><span class="pills"><span class="pill st"[\s\S]*?<\/span><\/span><span class="pills more"><button class="pill warn"[\s\S]*?<\/button><\/span><\/div>/);
+  assert.doesNotMatch((await make(cards.ProxmoxGuestCard, { guest: 102 }))._card(), /pills more/);
+});
+
+test("the pills sit after the whole title or under the subtitle, decided by measure, never by a fixed width", async () => {
+  const style = cards.ProxmoxCard.STYLE;
+  // Beside the title by default; the other pills, then all of them, on a line under the subtitle; their dots only.
+  assert.match(style, /\.t \{[^}]*grid-template-areas:"n p m \." "s s s s"/);
+  assert.match(style, /\.t\.more-below \{ grid-template-areas:"n p \. \." "s s s s" "m m m m"; \}/);
+  assert.match(style, /\.t\.below \{ grid-template-areas:"n n n n" "s s s s" "p m \. \."; \}/);
+  // The only width rule left for the pills: their dots only on a card of 200 px or less.
+  assert.doesNotMatch(style, /px-head \(max-width/);
+  assert.match(style, /@container px-card \(max-width: 200px\) \{ \.banner \.pill \{ padding:4px; \}/);
+  // The classic header puts its pills in the same title row.
+  const classic = (await make(cards.ProxmoxGuestCard, { guest: 102, illustration: false }))._card();
+  assert.match(classic, /<div class="t"><div class="tl"><span class="n">[^<]*<\/span><span class="pills"><span title="Running" class="pill good">Running<\/span>/);
+  // A node's classic header: the status pill first, then the update apart, each with its label in its title.
+  const node = (await make(cards.ProxmoxCard, { illustration: false }))._card();
+  assert.match(node, /<span class="pills"><span title="Online" class="pill good">Online<\/span><\/span><span class="pills more"><button class="pill warn"[^>]*title="Update available"/);
+  // The classic pills get a dot in their tone, the label hidden when only the dots fit.
+  assert.match(style, /\.head \.t \.pill::before \{ content:""; width:6px; height:6px; border-radius:50%; background:var\(--c\);/);
+  assert.match(style, /\.head \.t\.dot-only \.pill, \.head \.t\.more-dot \.more \.pill \{ font-size:0;/);
+  // Both labels do not fit: the update keeps only its dot, the status pill its label; then every pill as a dot.
+  assert.match(style, /\.t\.dot-only \.pill \.txt, \.t\.more-dot \.more \.pill \.txt \{ position:absolute;/);
+  assert.match(cards.ProxmoxCard.prototype._fitPill.toString(), /\["", "more-dot", "dot-only"\]/);
+  // A card that fits nothing never throws in a page without layout (no getComputedStyle): the measure just stops.
+  const el = await make(cards.ProxmoxCard, {});
+  assert.doesNotThrow(() => el._fitPill());
 });
 
 test("no rewrite under a press: drawn by the click, or once released", async () => {
@@ -204,9 +249,65 @@ test("title: replaces the name of a single node or machine, and the mini card's 
   assert.match(mini._card(), /class="n">Homelab</);
   const guest = await make(cards.ProxmoxGuestCard, { guest: 102, title: "Docker" });
   assert.match(guest._card(), /class="n">Docker</);
-  // Several machines: each keeps its name
+  // Several machines: each keeps its name, the title goes on the banner summing them up (none without it)
   const two = await make(cards.ProxmoxGuestCard, { guests: [100, 102], title: "Docker" });
-  assert.doesNotMatch(two._card(), /class="n">Docker</);
+  assert.match(two._card(), /class="banner[^"]*">[\s\S]*?class="n">Docker</);
+  const classic = await make(cards.ProxmoxGuestCard, { guests: [100, 102], title: "Docker", illustration: false });
+  assert.doesNotMatch(classic._card(), /class="n">Docker</);
+});
+
+test("illustrated header: rack in the state's colour, night, classic header with illustration: false", async () => {
+  // pve1 online with some machines stopped: a warning, the server icon with the Proxmox logo on it
+  const node = await make(cards.ProxmoxCard, {});
+  let html = node._card();
+  assert.match(html, /class="banner warn"/);
+  assert.match(html, /class="brand"/);
+  assert.match(html, /class="px-scene"/);
+  assert.equal((html.match(/class="head"/g) || []).length, 0, "the banner replaces the node's header");
+  // Unique gradient ids per card
+  const other = await make(cards.ProxmoxCard, {});
+  assert.notEqual(html.match(/px-sheen-\d+/)[0], other._card().match(/px-sheen-\d+/)[0]);
+  // Night: forced, else the sun below the horizon or the dark mode
+  assert.match((await make(cards.ProxmoxCard, { illustration_theme: "night" }))._card(), /class="banner warn night"/);
+  const sunDown = hass();
+  sunDown.states = { ...states, "sun.sun": { state: "below_horizon", attributes: {} } };
+  assert.match((await make(cards.ProxmoxCard, {}, sunDown))._card(), /night/);
+  assert.doesNotMatch((await make(cards.ProxmoxCard, { illustration_theme: "day" }, sunDown))._card(), /banner[^"]*night/);
+  // Home Assistant's dark mode: night while the sun is up too, unless forced to day
+  const darkDay = hass();
+  darkDay.states = { ...states, "sun.sun": { state: "above_horizon", attributes: {} } };
+  darkDay.themes = { darkMode: true };
+  assert.match((await make(cards.ProxmoxCard, {}, darkDay))._card(), /class="banner warn night"/);
+  assert.doesNotMatch((await make(cards.ProxmoxCard, { illustration_theme: "day" }, darkDay))._card(), /banner[^"]*night/);
+  // A running machine, a stopped one
+  assert.match((await make(cards.ProxmoxGuestCard, { guest: 102 }))._card(), /class="banner ok"/);
+  assert.match((await make(cards.ProxmoxGuestCard, { guest: 205 }))._card(), /class="banner idle"/);
+  // Node down
+  const down = hass();
+  down.states = { ...states, "sensor.pve1_status": { state: "offline", attributes: {} } };
+  assert.match((await make(cards.ProxmoxMiniCard, { node: "pve1" }, down))._card(), /class="banner err"/);
+  // Classic header
+  html = (await make(cards.ProxmoxCard, { illustration: false }))._card();
+  assert.doesNotMatch(html, /class="banner/);
+  assert.match(html, /class="head"/);
+  assert.doesNotMatch(html, /px-cable/);
+});
+
+test("banner uplink: packets flowing (running), slower (warning), red dashes blinking (node down), still (stopped)", async () => {
+  assert.deepEqual(
+    ["ok", "warn", "err", "idle", "unknown"].map((s) => cards.uplinkMode(s)),
+    ["flow", "slow", "cut", "still", "still"],
+  );
+  const cable = (html) => html.match(/class="px-cable (\w+)"/)?.[1];
+  assert.equal(cable((await make(cards.ProxmoxGuestCard, { guest: 102 }))._card()), "flow");
+  assert.equal(cable((await make(cards.ProxmoxCard, {}))._card()), "slow");
+  assert.equal(cable((await make(cards.ProxmoxGuestCard, { guest: 205 }))._card()), "still");
+  const down = hass();
+  down.states = { ...states, "sensor.pve1_status": { state: "offline", attributes: {} } };
+  assert.equal(cable((await make(cards.ProxmoxMiniCard, { node: "pve1" }, down))._card()), "cut");
+  assert.equal(cable((await make(cards.ProxmoxGuestMiniCard, { guest: 102 }))._card()), "flow");
+  // The cable sits in the banner, before the rack drawn over its end
+  assert.match((await make(cards.ProxmoxCard, {}))._card(), /class="px-ground"><\/div><div class="px-cable slow"[^>]*><\/div><svg class="px-scene"/);
 });
 
 test("sections: a click folds and unfolds; collapsed starts folded and a tap elsewhere folds them again (#7)", async () => {

@@ -1,10 +1,13 @@
 // Renders the sidebar panel with mock Proxmox VE data and saves the README screenshots.
 // Usage: npm run screenshots (CHROMIUM_PATH=/path/to/chrome to use an installed browser)
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { history, inventory, NOW, states } from "./mock-states.mjs";
-import { shots } from "./screenshot-shots.mjs";
+import { gifs, shots } from "./screenshot-shots.mjs";
 import { writeIfChanged } from "./screenshot-write.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -56,7 +59,8 @@ const page_html = (theme, width) => `<!doctype html><html><head><meta charset="u
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 
-for (const s of shots) {
+// A page showing the panel or a card of the setup `s`, with the mock data (`s.states` overriding some states).
+async function open(s) {
   const page = await browser.newPage({ deviceScaleFactor: 2, viewport: { width: s.width + (s.card ? 32 : 0), height: 1600 } });
   await page.clock.setFixedTime(NOW);
   page.on("pageerror", (err) => console.error(`${s.file}: ${err.message}`));
@@ -73,7 +77,7 @@ for (const s of shots) {
   await page.evaluate(
     async ({ s, states, inventory, history }) => {
       const hass = {
-        states, language: "en", locale: { language: "en" }, user: { is_admin: true },
+        states, language: "en", locale: { language: "en" }, user: { is_admin: true }, themes: { darkMode: s.theme === "dark" },
         connection: { subscribeMessage: () => Promise.resolve(() => {}) },
         callWS: async (msg) =>
           msg.type === "proxmox_panel/inventory"
@@ -106,9 +110,14 @@ for (const s of shots) {
       // The confirmation of an action, as a press on its button shows it
       if (s.press) setTimeout(() => el._askOrPress(s.tab, el._find(s.press[0]), s.press[1]), 200);
     },
-    { s, states, inventory, history },
+    { s, states: { ...states, ...(s.states || {}) }, inventory, history },
   );
   await page.waitForTimeout(800);
+  return page;
+}
+
+for (const s of shots) {
+  const page = await open(s);
   const box = await page.locator("#root").boundingBox();
   const pad = s.card ? 16 : 0;
   const png = await page.screenshot({
@@ -118,6 +127,47 @@ for (const s of shots) {
   // Rewritten only when the pixels change: an identical picture never shows up as a modified file.
   const written = writeIfChanged(`${root}screenshots/${s.file}.png`, png);
   console.log(`screenshots/${s.file}.png${written ? "" : " (unchanged)"}`);
+  await page.close();
+}
+
+// The banner's animations, one looping GIF per state (screenshots/<file>.gif): every animation paused and stepped
+// frame by frame over a 2.4 s loop (two blinks of the status lights, one pass of the uplink's slow packets), so the
+// GIF is the same whatever the machine's speed.
+const FPS = 10;
+const CYCLE = 2400;
+for (const g of gifs) {
+  const page = await open(g);
+  const clip = await page.evaluate(() => {
+    const b = document.querySelector("#root > *").shadowRoot.querySelector(".banner").getBoundingClientRect();
+    return { x: b.x, y: b.y, width: b.width, height: b.height };
+  });
+  const dir = mkdtempSync(join(tmpdir(), "px-frames-"));
+  const frames = (CYCLE / 1000) * FPS;
+  for (let i = 0; i < frames; i++) {
+    await page.evaluate((t) => {
+      const walk = (root, out) => {
+        for (const el of root.querySelectorAll("*")) {
+          out.push(...el.getAnimations());
+          if (el.shadowRoot) walk(el.shadowRoot, out);
+        }
+        return out;
+      };
+      for (const a of walk(document, [])) {
+        a.pause();
+        a.currentTime = t;
+      }
+    }, 3 * CYCLE + (i * 1000) / FPS);
+    await page.screenshot({ path: join(dir, `f${String(i).padStart(3, "0")}.png`), clip, animations: "allow" });
+  }
+  const out = join(dir, "out.gif");
+  execFileSync("ffmpeg", [
+    "-y", "-loglevel", "error", "-framerate", String(FPS), "-i", join(dir, "f%03d.png"),
+    "-vf", "split[a][b];[a]palettegen=max_colors=96[p];[b][p]paletteuse=dither=bayer:bayer_scale=4",
+    "-fflags", "+bitexact", "-flags", "+bitexact", "-loop", "0", out,
+  ]);
+  const written = writeIfChanged(`${root}screenshots/${g.file}.gif`, readFileSync(out));
+  console.log(`screenshots/${g.file}.gif${written ? "" : " (unchanged)"}`);
+  rmSync(dir, { recursive: true });
   await page.close();
 }
 

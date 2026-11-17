@@ -151,6 +151,11 @@ export const PROXMOX_PANEL_EN = {
   e_max_items: "Machines shown per list",
   e_title: "Custom title",
   e_collapsed: "Sections folded",
+  e_illustration: "Illustrated header",
+  e_illustration_theme: "Illustration theme",
+  e_theme_auto: "Automatic (sun or dark theme)",
+  e_theme_day: "Day",
+  e_theme_night: "Night",
   e_language: "Language",
   e_lang_auto: "As in Home Assistant",
 };

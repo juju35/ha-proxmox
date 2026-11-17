@@ -26,7 +26,7 @@ Home Assistant integration that adds a **Proxmox** panel to the sidebar and **Pr
 - **Confirmation** before the actions that stop or restart something (stop, shut down, reset, restart, hibernate, node-wide actions), at the top of the list
 - **Settings**: stopped machines shown or not, the confirmation, inactive storage hidden
 - **Administrators only**: the panel and its commands are kept for administrators
-- **Cards** for your dashboards, seen by every user: a node card (`proxmox-card`) and its mini card, a virtual machine or container card (`proxmox-guest-card`) and its mini card, with the visual editor; their actions are offered to administrators only
+- **Cards** for your dashboards, seen by every user: a node card (`proxmox-card`) and its mini card, a virtual machine or container card (`proxmox-guest-card`) and its mini card, with an illustrated header (a server rack whose lights and network uplink follow the state, day and night) and the visual editor; their actions are offered to administrators only
 - The **Proxmox logo** as the sidebar icon
 - Light and dark themes, phones and desktops, 22 languages
 - No connection to Proxmox of its own: the panel reads the entities of the Proxmox VE integration and presses its buttons, with the permissions you gave it
@@ -123,6 +123,8 @@ CPU, RAM and disk are drawn as on System Hub's System Monitor card and the NAS c
 | `title` | the node's name | The header's title (with a single node; with `node: all` each node keeps its name) |
 | `show_title` | `true` | The node's name in the header |
 | `show_subtitle` | `true` | Uptime and Proxmox VE version under it |
+| `illustration` | `true` | `false`: the classic header instead of the illustrated banner (server rack, lights and tag in the state's colour) |
+| `illustration_theme` | `auto` | `day` or `night` forces the banner's picture; `auto` shows the night picture when `sun.sun` is below the horizon or the theme is dark |
 | `language` | Home Assistant's | One of the 22 languages below |
 
 ### Node mini card
@@ -131,7 +133,7 @@ CPU, RAM and disk are drawn as on System Hub's System Monitor card and the NAS c
 type: custom:proxmox-mini-card
 ```
 
-One line per node with its CPU, RAM and disk bars and the machines running (`node:` keeps one, then its counts become the subtitle). The round button at the top right (`zoom: false` removes it) shows the node card in its place, with the same options; a click anywhere outside the card brings the compact view back. Options: `node`, `title` (the header's, over several nodes; else the node's), `zoom`, `show_title`, `show_subtitle`, `language`, and those of the node card for the zoomed view (`show_vms`, `show_containers`, `show_storage`, `show_stopped`, `show_history`, `show_actions`, `max_items`, `collapsed`), which can be set on the mini card too, in YAML or in its visual editor.
+One line per node with its CPU, RAM and disk bars and the machines running (`node:` keeps one, then its counts become the subtitle). The round button at the top right (`zoom: false` removes it) shows the node card in its place, with the same options; a click anywhere outside the card brings the compact view back. Options: `node`, `title` (the header's, over several nodes; else the node's), `zoom`, `show_title`, `show_subtitle`, `illustration`, `illustration_theme`, `language`, and those of the node card for the zoomed view (`show_vms`, `show_containers`, `show_storage`, `show_stopped`, `show_history`, `show_actions`, `max_items`, `collapsed`), which can be set on the mini card too, in YAML or in its visual editor.
 
 ### Virtual machine or container card
 
@@ -149,6 +151,8 @@ guest: 102          # a VMID; guests: [100, 202] stacks several machines
 | `title` | the machine's name | The header's title (with a single machine) |
 | `show_title` | `true` | The machine's name in the header |
 | `show_subtitle` | `true` | `VM 102 · pve1 · Up for 12 days` under it |
+| `illustration` | `true` | The banner with the rack: green while running, grey when stopped, amber when suspended, red when unavailable; `false` for the classic header |
+| `illustration_theme` | `auto` | Day or night picture of the banner (`auto`: night when the sun is down or the theme is dark) |
 | `language` | Home Assistant's | One of the 22 languages below |
 
 A running machine shows its CPU, RAM and disk gauges (24-hour curves behind CPU and RAM); a stopped one its CPUs, RAM and disk size.
@@ -174,6 +178,14 @@ One line per machine: CPU and RAM bars while it runs, else its status and a quic
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card.png" alt="Machine mini card" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card-dark.png" alt="Machine mini card dark" width="400"> |
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card-zoom.png" alt="Machine mini card zoomed in" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/guest-mini-card-zoom-dark.png" alt="Machine mini card zoomed in dark" width="400"> |
 
+The banner's animations: the status lights of the rack and its network uplink, a cable along the floor whose packets flow into the rack in the state's colour (a stopped machine's banner is still, its cable grey):
+
+| Light | Dark |
+|---|---|
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-running.gif" alt="Banner, all machines running: the status lights blinking, packets flowing in" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-running-dark.gif" alt="Banner, all machines running: the status lights blinking, packets flowing in dark" width="400"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-warning.gif" alt="Banner, some machines stopped: their lights off, slower amber packets" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-warning-dark.gif" alt="Banner, some machines stopped: their lights off, slower amber packets dark" width="400"> |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-down.gif" alt="Banner, node down: its red light and the uplink red dashes blinking" width="400"> | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/screenshots/header-down-dark.gif" alt="Banner, node down: its red light and the uplink red dashes blinking dark" width="400"> |
+
 ## How it works
 
 The Proxmox VE integration creates one device per node, virtual machine, container and storage. The panel's integration reads the device and entity registries and tells the panel which entity is which: each device is recognized by its identifier (`<entry>_node_<id>`, `<entry>_vm_<vmid>`, `<entry>_container_<vmid>`, `<entry>_storage_<name>`), and each entity by the end of its unique ID (`node_cpu`, `vm_memory`, `start`, `snapshot_create`…), so renamed entities and entity IDs in another language are supported. The custom Proxmox VE integration is read the same way, from its own identifiers (`<entry>_NODE_<node>`, `<entry>_QEMU_<vmid>`, `<entry>_LXC_<vmid>`, `<entry>_STORAGE_<name>`) and description keys (`cpu`, `memory_used_perc`, `status_raw`, `startall`…; `<entry>_backup_<node>_finished` for the last backup). Disabled entities are reported too, which is how the Backups tab knows that the backup sensors are off.
@@ -189,7 +201,7 @@ Sizes are shown in base 1024 (KiB, MiB, GiB, TiB) with 2, 1 or 0 decimals as the
 ```bash
 pip install -r requirements_test.txt && pytest   # integration tests (Home Assistant test harness)
 npm ci && npm test                               # panel and card tests
-npm run screenshots                              # renders the panel and the cards with mock data into screenshots/
+npm run screenshots                              # renders the panel and the cards with mock data into screenshots/ (GIFs need ffmpeg)
 ```
 
 The panel (`proxmox-panel.js`) and the cards (`proxmox-cards.js`) are plain JavaScript modules in `custom_components/proxmox_panel/frontend/`, sharing `proxmox-common.js` (strings, icons, formatting), served by the integration with their language files (`frontend/i18n/`): nothing to build.
