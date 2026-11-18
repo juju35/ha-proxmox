@@ -1,6 +1,8 @@
 version: 2
 updates:
   - package-ecosystem: github-actions
+    commit-message:
+      prefix: "chore(deps)"
     directory: /
     schedule:
       interval: monthly
@@ -10,6 +12,8 @@ updates:
   # devDependencies (Playwright, used by scripts/screenshots.mjs). The Screenshots workflow installs
   # the browser with the Playwright from the lock (npm ci, then npx playwright), so a bump stays aligned.
   - package-ecosystem: npm
+    commit-message:
+      prefix: "chore(deps)"
     directory: /
     schedule:
       interval: monthly
@@ -21,6 +25,8 @@ updates:
   # hook's rev, its additional_dependencies and biome.json ($schema), so Dependabot leaves it alone.
   # The Lint workflow reads it from the hook and fails when the three disagree.
   - package-ecosystem: pre-commit
+    commit-message:
+      prefix: "chore(deps)"
     directory: /
     schedule:
       interval: monthly
