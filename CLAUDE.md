@@ -71,7 +71,7 @@ This builds on other Home Assistant integrations, so keep the `## Supported inte
 
 ## Screenshots — do not edit or commit them by hand
 The Screenshots workflow regenerates them on the PR branch and commits them with `[skip ci]`.
-Comparison is exact. They are English, with light/dark twins, neutral/mock data, and never
+Comparison is by decoded pixels, tolerating rasterizer noise (shades ≤ 16 per channel, ≤ 0.001 % of the pixels otherwise). They are English, with light/dark twins, neutral/mock data, and never
 real family names. **One GIF per distinct animation/state/variant** (not one per repo).
 
 ## Cards — UX & rendering
