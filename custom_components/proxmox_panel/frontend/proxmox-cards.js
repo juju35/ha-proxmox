@@ -41,7 +41,7 @@ import {
   proxmoxUptime,
 } from "./proxmox-common.js";
 
-export const PROXMOX_CARDS_VERSION = "1.4.0";
+export const PROXMOX_CARDS_VERSION = "1.4.1";
 const LANGUAGE_NAMES = {
   en: "English", fr: "Français", de: "Deutsch", es: "Español", sr: "Српски", "sr-Latn": "Srpski (latinica)", it: "Italiano",
   nl: "Nederlands", pt: "Português", pl: "Polski", ro: "Română", da: "Dansk", sv: "Svenska", bg: "Български", ru: "Русский",
@@ -582,12 +582,12 @@ class ProxmoxBaseCard extends HTMLElement {
     return this._config.illustration !== false;
   }
 
-  /** Night picture: forced by `illustration_theme`, else the sun below the horizon or Home Assistant's dark mode. */
+  /** Night picture: forced by `illustration_theme`, else Home Assistant's dark mode alone (a light theme keeps the day picture after sunset). */
   _night() {
     const theme = this._config.illustration_theme;
     if (theme === "night") return true;
     if (theme === "day") return false;
-    return this._hass?.states?.["sun.sun"]?.state === "below_horizon" || !!this._hass?.themes?.darkMode;
+    return !!this._hass?.themes?.darkMode;
   }
 
   /**
