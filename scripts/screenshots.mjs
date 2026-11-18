@@ -116,8 +116,25 @@ async function open(s) {
   return page;
 }
 
+// Pauses every animation of the page at `t` ms, so a capture never depends on how fast the machine rendered it.
+// Collected per document / shadow root: unlike Element.getAnimations(), DocumentOrShadowRoot.getAnimations() also
+// returns the ::before/::after animations (the uplink's packets), which otherwise kept running in real time.
+const seek = (page, t) =>
+  page.evaluate((t) => {
+    const walk = (root, out) => {
+      out.push(...root.getAnimations());
+      for (const el of root.querySelectorAll("*")) if (el.shadowRoot) walk(el.shadowRoot, out);
+      return out;
+    };
+    for (const a of walk(document, [])) {
+      a.pause();
+      a.currentTime = t;
+    }
+  }, t);
+
 for (const s of shots) {
   const page = await open(s);
+  await seek(page, 0);
   const box = await page.locator("#root").boundingBox();
   const pad = s.card ? 16 : 0;
   const png = await page.screenshot({
@@ -144,19 +161,7 @@ for (const g of gifs) {
   const dir = mkdtempSync(join(tmpdir(), "px-frames-"));
   const frames = (CYCLE / 1000) * FPS;
   for (let i = 0; i < frames; i++) {
-    await page.evaluate((t) => {
-      const walk = (root, out) => {
-        for (const el of root.querySelectorAll("*")) {
-          out.push(...el.getAnimations());
-          if (el.shadowRoot) walk(el.shadowRoot, out);
-        }
-        return out;
-      };
-      for (const a of walk(document, [])) {
-        a.pause();
-        a.currentTime = t;
-      }
-    }, 3 * CYCLE + (i * 1000) / FPS);
+    await seek(page, 3 * CYCLE + (i * 1000) / FPS);
     await page.screenshot({ path: join(dir, `f${String(i).padStart(3, "0")}.png`), clip, animations: "allow" });
   }
   const out = join(dir, "out.gif");

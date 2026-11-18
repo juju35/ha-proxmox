@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { imageSize, writeIfChanged } from "../scripts/screenshot-write.mjs";
+import { imageSize, NOISE, SHADE, samePixels, writeIfChanged } from "../scripts/screenshot-write.mjs";
 
 /** A fake PNG: a real signature and IHDR size, then a "compressed" body that the stub decoder maps to its pixels. */
 const png = (w, h, body) => {
@@ -15,8 +15,8 @@ const png = (w, h, body) => {
   head.writeUInt32BE(h, 20);
   return Buffer.concat([head, Buffer.from(body)]);
 };
-// Two encodings ("a1", "a2") of the same pixels "A"; "b1" are other pixels.
-const pixels = (buf) => Buffer.from(buf.toString("latin1", 24, 25).toUpperCase());
+// Two encodings ("a1", "a2") of the same pixels "A"; "b1" are other pixels (one RGBA pixel, colours far apart).
+const pixels = (buf) => Buffer.alloc(4, (buf.toString("latin1", 24, 25).toUpperCase().charCodeAt(0) - 65) * 100);
 
 const withDir = (fn) => {
   const dir = mkdtempSync(join(tmpdir(), "sm-shot-test-"));
@@ -45,6 +45,23 @@ test("a capture with other pixels, another size or no previous file is written",
     assert.equal(readFileSync(file).toString("latin1", 24), "b1");
     assert.equal(writeIfChanged(file, png(10, 6, "b2"), pixels), true, "same pixel bytes, other size");
   });
+});
+
+test("rasterizer noise is the same picture, a real change is not", () => {
+  const n = Math.ceil(2 / NOISE); // pixels: two of them may change
+  const a = Buffer.alloc(n * 4, 0x80);
+  const b = Buffer.from(a);
+  for (let i = 0; i < b.length; i += 12) b[i] = 0x80 + SHADE; // a shade off everywhere
+  b[1] = 0x00;
+  b[4 * 7 + 2] = 0xff;
+  assert.equal(samePixels(a, b), true, "shades and two changed pixels");
+  b[4 * 99 + 1] = 0x00;
+  assert.equal(samePixels(a, b), false, "three changed pixels");
+  assert.equal(samePixels(a, Buffer.alloc(n * 4 + 4, 0x80)), false, "another length");
+  const tiny = Buffer.alloc(16 * 4, 0x80);
+  const other = Buffer.from(tiny);
+  other[3] = 0;
+  assert.equal(samePixels(tiny, other), false, "a small image allows no changed pixel");
 });
 
 test("image sizes are read from PNG and GIF headers", () => {
