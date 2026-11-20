@@ -1,6 +1,13 @@
 # Changelog
 
-## 1.4.2 - 2026-11-20
+## 1.5.0 - 2026-11-20
+
+### Features
+- **Illustrated top bar on the panel**: the cards' 90 px server room replaces Home Assistant's toolbar — the rack and its network uplink in the worst state of every node and machine, the round Proxmox icon in that state's colour, the title with its status pill (Online, the machines running when some are stopped, Offline), the node names, and round frosted **Refresh** and **Proxmox VE integration** buttons; the text tabs sit under it, the active one underlined in the Proxmox orange. Night picture with Home Assistant's dark theme only. On a narrow screen the picture, the subtitle and the Refresh button make room and the pill keeps its dot.
+- **Count on the sidebar entry**: a red count, like Home Assistant's notifications, of the nodes down plus the machines unavailable on a node that is up (administrators only).
+
+### Performance
+- The inventory (a scan of the device and entity registries) is kept until a registry or a Proxmox entry changes, instead of being rebuilt on every call of the panel and the cards.
 
 ### Fixes
 - A confirmation left open (*Restart: jellyfin?*) is closed without acting when the panel or the card leaves the page, instead of being shown again on the way back.
