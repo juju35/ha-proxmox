@@ -7,6 +7,7 @@
   "backups": "Säkerhetskopior",
   "settings": "Inställningar",
   "open_integration": "Proxmox VE-integration",
+  "refresh": "Uppdatera",
   "loading": "Laddar…",
   "no_proxmox": "Proxmox VE-integrationen är inte konfigurerad än. Lägg till den med din Proxmox-server: den här panelen visar vad den erbjuder.",
   "add_proxmox": "Lägg till Proxmox VE-integrationen",

@@ -14,6 +14,7 @@
  */
 
 import {
+  PROXMOX_BANNER_STYLE,
   PROXMOX_PANEL_ACTIONS,
   PROXMOX_PANEL_CUTTING,
   PROXMOX_PANEL_FOR_STATUS,
@@ -33,15 +34,20 @@ import {
   proxmoxPanelEsc as esc,
   proxmoxPanelIcon as icon,
   proxmoxPct,
+  proxmoxRackSvg,
   proxmoxReleasePress,
+  proxmoxSceneOf,
   proxmoxState,
   proxmoxStatus,
   proxmoxStatusPill,
   proxmoxT,
+  proxmoxUplinkHtml,
   proxmoxUptime,
 } from "./proxmox-common.js";
 
-export const PROXMOX_CARDS_VERSION = "1.4.1";
+export { UPLINK_MODES, uplinkMode } from "./proxmox-common.js";
+
+export const PROXMOX_CARDS_VERSION = "1.5.0";
 const LANGUAGE_NAMES = {
   en: "English", fr: "Français", de: "Deutsch", es: "Español", sr: "Српски", "sr-Latn": "Srpski (latinica)", it: "Italiano",
   nl: "Nederlands", pt: "Português", pl: "Polski", ro: "Română", da: "Dansk", sv: "Svenska", bg: "Български", ru: "Русский",
@@ -143,10 +149,6 @@ const gaugeCurve = (points) => {
 
 // ── Illustrated header ──
 
-// The header's state: ok (running), warn (some machines stopped, suspended), idle (stopped), err (node down,
-// unavailable). It colours the icon, the rack's lights and its "PVE" tag.
-const SCENE_TAG = { ok: "#43a047", warn: "#f29d0b", idle: "#8a94a3", err: "#e5484d" };
-
 /** The state of a machine, and of several machines (the worst of them). */
 const guestScene = (statuses) => {
   if (!statuses.length || statuses.includes("unavailable")) return "err";
@@ -155,85 +157,24 @@ const guestScene = (statuses) => {
   return "warn";
 };
 
-/**
- * The picture at the right of the banner, 110 × 80 above its 10 px ground strip: a server rack standing on the floor
- * (six units, their status lights blinking), and its "PVE" tag in the state's colour. `dim` counts the units drawn
- * stopped (warn); `tagLow` moves the tag under the zoom button of the mini cards; `uid` keeps the gradient of each card apart on a page with several cards.
- */
-const rackSvg = (state, uid, dim = 1, tagLow = false) => {
-  const units = Array.from({ length: 6 }, (_, r) => {
-    const y = 13 + r * 10.6;
-    const off = state === "idle" || (state === "err" && r > 0) || (state === "warn" && r >= 6 - dim);
-    const led = state === "err" && r === 0 ? SCENE_TAG.err : off ? (state === "warn" ? SCENE_TAG.warn : "#59616e") : r % 2 ? "#2f80ed" : "#43c463";
-    const blink = !off ? ` class="px-blink" style="animation-delay:${(r * 0.2).toFixed(1)}s"` : "";
-    return `<rect class="px-unit${off ? " off" : ""}" x="38" y="${y}" width="32" height="8" rx="1.4"/><circle${blink} cx="42" cy="${y + 4}" r="1.2" fill="${led}"/>
-      <rect class="px-slot" x="46" y="${y + 3.2}" width="${12 + ((r * 7) % 10)}" height="1.6" rx=".8"/><rect class="px-slot" x="64" y="${y + 2}" width="3" height="4" rx=".6"/>`;
-  }).join("");
-  return `<svg class="px-scene" viewBox="0 0 110 80" preserveAspectRatio="xMaxYMax meet" aria-hidden="true" focusable="false">
-    <defs><linearGradient id="px-sheen-${uid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".1"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
-    <rect class="px-rack" x="34" y="7" width="40" height="73" rx="3"/><rect x="34" y="7" width="40" height="73" rx="3" fill="url(#px-sheen-${uid})"/>
-    <rect class="px-top" x="38" y="9.2" width="32" height="1.4" rx=".7"/>${units}
-    <g transform="translate(88 ${tagLow ? 56 : 22})"><rect x="-12" y="-8" width="24" height="16" rx="3" fill="${SCENE_TAG[state]}"/><text y="3" text-anchor="middle" font-size="7" font-weight="700" fill="#fff" font-family="sans-serif">PVE</text></g>
-  </svg>`;
-};
-
-/**
- * The network uplink of the banner: a cable along the top of the ground strip into the rack, its packets in the
- * state's colour. Running: packets flowing in; warning: slower, sparser packets; node down: red dashes blinking, no
- * flow; stopped: a grey cable, nothing moving.
- */
-export const UPLINK_MODES = { ok: "flow", warn: "slow", err: "cut", idle: "still" };
-export const uplinkMode = (state) => UPLINK_MODES[state] || "still";
-const uplinkHtml = (state) => `<div class="px-cable ${uplinkMode(state)}" aria-hidden="true"></div>`;
-
-// The banner: 90 px high, a server room's wall, the rack at its right and a 10 px concrete strip edge to edge at its
-// bottom; the round icon, the title and the subtitle on the wall at its left. Day and night pictures.
+// The banner (its picture in proxmox-common.js, shared with the panel's top bar): the round icon, the title and the
+// subtitle on the wall at its left, the zoom button of the mini cards.
 const BANNER_STYLE = `
+  ${PROXMOX_BANNER_STYLE}
+  .banner { margin:-14px -16px 0; }
   ha-card { container:px-card / inline-size; }
-  .banner { --st:var(--tone-good); position:relative; overflow:hidden; height:90px; flex:none; margin:-14px -16px 0; color:#1b2533; background:#e3e8ef; }
-  .banner.night { color:#fff; background:#161c28; }
-  .banner.warn { --st:var(--tone-warn); } .banner.err { --st:var(--tone-bad); } .banner.idle { --st:#8a94a3; }
-  .px-ground { position:absolute; left:0; right:0; bottom:0; height:10px; background:#9aa1a9; box-shadow:inset 0 2px 0 #b5bbc2; }
-  .night .px-ground { background:#2c323b; box-shadow:inset 0 2px 0 #39404a; }
-  .px-scene { position:absolute; right:0; bottom:10px; height:80px; width:110px; }
-  .px-rack { fill:#2a3038; } .night .px-rack { fill:#262c35; stroke:#3a4352; stroke-width:.8; }
-  .px-top { fill:#3d4552; }
-  .px-unit { fill:#3d4552; } .px-unit.off { fill:#333a45; }
-  .px-slot { fill:#5c6678; } .err .px-rack, .idle .px-rack { fill:#2f343c; }
-  .px-blink { animation:px-blink 1.2s steps(2) infinite; }
-  @keyframes px-blink { 50% { opacity:.2; } }
-  /* The uplink (see uplinkHtml): it runs under the rack, whose left side is 76 px from the banner's right. Every
-     cycle divides 2.4 s, the GIFs' loop. */
-  .px-cable { position:absolute; left:0; right:72px; bottom:10px; height:4px; background:#5c6678; border-radius:0 2px 2px 0; }
-  .night .px-cable { background:#3a4352; }
-  .px-cable::after { content:""; position:absolute; left:0; right:0; top:1px; height:2px; }
-  .px-cable.flow::after { background:repeating-linear-gradient(90deg, var(--st) 0 6px, transparent 6px 18px); animation:px-flow .6s linear infinite; }
-  .px-cable.slow::after { background:repeating-linear-gradient(90deg, var(--st) 0 6px, transparent 6px 36px); animation:px-flow-slow 2.4s linear infinite; }
-  .px-cable.cut::after { background:repeating-linear-gradient(90deg, var(--st) 0 4px, transparent 4px 10px); animation:px-blink 1.2s steps(2) infinite; }
-  .px-cable.still::after { display:none; }
-  @keyframes px-flow { to { background-position:18px 0; } }
-  @keyframes px-flow-slow { to { background-position:36px 0; } }
-  @media (prefers-reduced-motion: reduce) { .px-blink, .px-cable::after { animation:none !important; } }
   .htext { position:absolute; left:14px; top:0; bottom:10px; right:118px; display:flex; align-items:center; gap:10px; min-width:0; }
   .htext { container:px-head / inline-size; }
   .htext .n { font-size:16px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .htext .s { font-size:13px; color:#4a5768; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .night .htext .s { color:rgba(255,255,255,.78); }
-  .banner .badge { position:relative; color:var(--st); background:rgba(255,255,255,.62); box-shadow:inset 0 0 0 1px rgba(27,37,51,.12); }
-  .banner.night .badge { background:rgba(255,255,255,.12); box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); }
-  /* Pills on the wall: a dot and the label in their colour (the status pill in the icon's, --st), on frosted glass. */
-  .banner .pill { --c:#8a94a3; display:inline-flex; align-items:center; gap:4px; padding:1px 8px; line-height:16px; font-size:11px; font-weight:500;
-                  background:color-mix(in srgb, var(--c) 18%, rgba(255,255,255,.78)); color:color-mix(in srgb, var(--c) 45%, #0d2a45); }
-  .banner .pill::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--c); flex:none; }
-  .banner .pill.good { --c:var(--tone-good); } .banner .pill.warn { --c:var(--tone-warn); } .banner .pill.bad { --c:var(--tone-bad); } .banner .pill.st { --c:var(--st); }
-  .banner.night .pill { background:color-mix(in srgb, var(--c) 30%, rgba(8,18,38,.55)); color:color-mix(in srgb, var(--c) 35%, #ffffff); }
   /* The Proxmox logo on a white tile at the icon's bottom right, readable on any theme. */
   .brand { position:absolute; right:-4px; bottom:-4px; width:18px; height:18px; border-radius:5px; padding:2px; box-sizing:border-box;
            display:grid; place-items:center; background:#fff; color:var(--px-accent); box-shadow:0 0 0 1px rgba(27,37,51,.16), 0 1px 3px rgba(27,37,51,.18); }
   .brand .i { width:14px; height:14px; }
   /* The mini cards' zoom button: 24 px frosted round in the banner's top right corner. */
   .banner .zoom { position:absolute; z-index:2; top:5px; right:5px; width:24px; height:24px; border:0; color:#33506b;
-                  background:rgba(255,255,255,.55); box-shadow:inset 0 0 0 1px rgba(255,255,255,.7); backdrop-filter:blur(4px); }
+                  background:rgba(255,255,255,.55); box-shadow:inset 0 0 0 1px rgba(255,255,255,.7); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
   .banner .zoom:hover { background:rgba(255,255,255,.75); }
   .banner.night .zoom { color:#fff; background:rgba(255,255,255,.12); box-shadow:inset 0 0 0 1px rgba(255,255,255,.2); }
   .banner.night .zoom:hover { background:rgba(255,255,255,.22); }
@@ -395,6 +336,11 @@ class ProxmoxBaseCard extends HTMLElement {
     document.fonts?.removeEventListener?.("loadingdone", this._onFonts);
     this._resize?.disconnect();
     this._fitWidth = null;
+    // Left with a confirmation open (another view, a conditional card hidden): closed without acting, as Cancel.
+    if (this._confirm) {
+      this._confirm = null;
+      this._last = null;
+    }
   }
 
   setConfig(config) {
@@ -604,7 +550,7 @@ class ProxmoxBaseCard extends HTMLElement {
     const s = this._config.show_subtitle === false || !subtitle ? "" : `<span class="s">${esc(subtitle)}</span>`;
     const p = pills.filter(Boolean);
     const badge = `<span class="badge">${icon(iconName)}<span class="brand" title="Proxmox VE">${icon("logo")}</span></span>`;
-    return `<div class="banner ${state}${this._night() ? " night" : ""}"><div class="px-ground"></div>${uplinkHtml(state)}${rackSvg(state, this._uid, dim, !!aside)}
+    return `<div class="banner ${state}${this._night() ? " night" : ""}"><div class="px-ground"></div>${proxmoxUplinkHtml(state)}${proxmoxRackSvg(state, this._uid, dim, !!aside)}
       <div class="htext">${badge}<div class="t"><div class="tl">${t}${p.length ? `<span class="pills">${p[0]}</span>` : ""}${p.length > 1 ? `<span class="pills more">${p.slice(1).join("")}</span>` : ""}</div>${s}</div></div>${aside}</div>`;
   }
 
@@ -930,15 +876,9 @@ export class ProxmoxCard extends ProxmoxBaseCard {
 
   /** The banner's state over nodes: down when one is offline, a warning when some machines are stopped, else running. */
   _sceneOf(nodes) {
-    const ids = new Set(nodes.map((n) => n.id));
-    const guests = [...this._items("vm"), ...this._items("container")].filter((g) => ids.has(g.node)).map((g) => proxmoxStatus(this._hass, g));
-    const stopped = guests.filter((s) => s !== "running").length;
-    const down = nodes.some((n) => proxmoxStatus(this._hass, n) !== "online");
-    return {
-      state: down ? "err" : stopped ? "warn" : "ok",
-      dim: guests.length ? Math.min(5, Math.max(1, Math.round((6 * stopped) / guests.length))) : 1,
-    };
+    return proxmoxSceneOf(this._hass, nodes, [...this._items("vm"), ...this._items("container")]);
   }
+
 
   _nodeBanner(node, aside = "") {
     const status = proxmoxStatus(this._hass, node);

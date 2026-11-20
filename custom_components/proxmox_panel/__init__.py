@@ -15,7 +15,7 @@ from homeassistant.core import CoreState, Event, HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
-from .const import CARDS_URL, COMMON_URL, DOMAIN, I18N_URL, ICONS_URL, PANEL_PATH, PANEL_URL, VERSION
+from .const import BADGE_URL, CARDS_URL, COMMON_URL, DOMAIN, I18N_URL, ICONS_URL, PANEL_PATH, PANEL_URL, VERSION
 from .panel import async_register_commands, async_register_panel
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,12 +35,15 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             # Imported by the panel and the cards without a version: not cached for long, so both get the one installed
             StaticPathConfig(COMMON_URL, str(base / "proxmox-common.js"), False),
             StaticPathConfig(ICONS_URL, str(base / "proxmox-icons.js"), True),
+            StaticPathConfig(BADGE_URL, str(base / "proxmox-badge.js"), True),
             StaticPathConfig(I18N_URL, str(base / "i18n"), True),
         ]
     )
     async_register_commands(hass)
     # The sidebar entry shows the Proxmox logo: its icon set is loaded on every page
     add_extra_js_url(hass, f"{ICONS_URL}?v={VERSION}")
+    # The sidebar entry's count (nodes down, machines unavailable), for administrators: on every page too
+    add_extra_js_url(hass, f"{BADGE_URL}?v={VERSION}")
     return True
 
 

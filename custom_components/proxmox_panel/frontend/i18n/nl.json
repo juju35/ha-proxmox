@@ -7,6 +7,7 @@
   "backups": "Back-ups",
   "settings": "Instellingen",
   "open_integration": "Proxmox VE-integratie",
+  "refresh": "Vernieuwen",
   "loading": "Laden…",
   "no_proxmox": "De Proxmox VE-integratie is nog niet ingesteld. Voeg haar toe met je Proxmox-server: dit paneel toont wat ze biedt.",
   "add_proxmox": "Proxmox VE-integratie toevoegen",

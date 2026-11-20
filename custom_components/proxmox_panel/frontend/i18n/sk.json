@@ -7,6 +7,7 @@
   "backups": "Zálohy",
   "settings": "Nastavenia",
   "open_integration": "Integrácia Proxmox VE",
+  "refresh": "Obnoviť",
   "loading": "Načítava sa…",
   "no_proxmox": "Integrácia Proxmox VE ešte nie je nastavená. Pridajte ju so svojím serverom Proxmox: tento panel zobrazuje, čo ponúka.",
   "add_proxmox": "Pridať integráciu Proxmox VE",

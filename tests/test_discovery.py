@@ -1,11 +1,14 @@
 """The inventory read from the device and entity registries of the Proxmox VE integration."""
 
+from unittest.mock import patch
+
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.proxmox_panel import discovery, panel
 from custom_components.proxmox_panel.discovery import async_inventory, custom_slot_of, parse_identifier, slot_of
 
 PROXMOX = "proxmoxve"
@@ -158,3 +161,25 @@ async def test_inventory_custom_integration(hass: HomeAssistant):
     assert set(inv["vm"][0]["entities"]) == {"cpu", "status"} and inv["vm"][0]["node"] == node.id
     assert list(inv["container"][0]["entities"]) == ["start"]
     assert list(inv["storage"][0]["entities"]) == ["used_pct"]
+
+
+async def test_inventory_cached_until_something_changes(hass: HomeAssistant):
+    """The panel's and cards' commands reuse the last scan until a registry or a Proxmox entry changes."""
+    panel.async_register_commands(hass)
+    entry = MockConfigEntry(domain=PROXMOX, title="192.168.1.10", state=ConfigEntryState.LOADED)
+    entry.add_to_hass(hass)
+    node = _device(hass, entry, "node_node/pve1", "pve1")
+    await hass.async_block_till_done()
+    with patch.object(panel, "async_inventory", wraps=discovery.async_inventory) as scan:
+        assert panel.cached_inventory(hass)["node"][0]["name"] == "pve1"
+        panel.cached_inventory(hass)
+        assert scan.call_count == 1
+        # Renamed in the device registry: scanned again
+        dr.async_get(hass).async_update_device(node.id, name_by_user="pve-main")
+        await hass.async_block_till_done()
+        assert panel.cached_inventory(hass)["node"][0]["name"] == "pve-main"
+        assert scan.call_count == 2
+        # The entry's state changes: scanned again
+        entry.mock_state(hass, ConfigEntryState.SETUP_RETRY)
+        assert panel.cached_inventory(hass)["entries"][0]["loaded"] is False
+        assert scan.call_count == 3

@@ -26,6 +26,7 @@ export const PROXMOX_PANEL_EN = {
   backups: "Backups",
   settings: "Settings",
   open_integration: "Proxmox VE integration",
+  refresh: "Refresh",
   loading: "Loading…",
   no_proxmox: "The Proxmox VE integration is not set up yet. Add it with your Proxmox server: this panel shows what it offers.",
   add_proxmox: "Add the Proxmox VE integration",
@@ -422,6 +423,103 @@ export const proxmoxRing = (label, pct, color, sub, points = []) => {
 };
 
 // Colours of the rings, the ha-* convention's
+// ── Illustrated header (the cards' banners and the panel's top bar) ──
+
+// The header's state: ok (running), warn (some machines stopped, suspended), idle (stopped), err (node down,
+// unavailable). It colours the icon, the rack's lights and its "PVE" tag.
+export const PROXMOX_SCENE_TAG = { ok: "#43a047", warn: "#f29d0b", idle: "#8a94a3", err: "#e5484d" };
+
+/** The state over nodes: down when one is offline, a warning when some of their machines are not running, else running; `dim` the rack units drawn stopped. */
+export const proxmoxSceneOf = (hass, nodes, guests) => {
+  const ids = new Set(nodes.map((n) => n.id));
+  const statuses = guests.filter((g) => ids.has(g.node)).map((g) => proxmoxStatus(hass, g));
+  const stopped = statuses.filter((s) => s !== "running").length;
+  const down = nodes.some((n) => proxmoxStatus(hass, n) !== "online");
+  return {
+    state: down ? "err" : stopped ? "warn" : "ok",
+    dim: statuses.length ? Math.min(5, Math.max(1, Math.round((6 * stopped) / statuses.length))) : 1,
+  };
+};
+
+/**
+ * What needs looking at, for the sidebar entry's count: the nodes down, and the machines unavailable on a node that is
+ * up (those of a node down are counted with it).
+ */
+export const proxmoxProblems = (hass, inv) => {
+  const nodes = inv?.node || [];
+  const down = new Set(nodes.filter((n) => proxmoxStatus(hass, n) !== "online").map((n) => n.id));
+  const guests = [...(inv?.vm || []), ...(inv?.container || [])].filter((g) => !down.has(g.node) && proxmoxStatus(hass, g) === "unavailable");
+  return down.size + guests.length;
+};
+
+/**
+ * The picture at the right of the banner, 110 × 80 above its 10 px ground strip: a server rack standing on the floor
+ * (six units, their status lights blinking), and its "PVE" tag in the state's colour. `dim` counts the units drawn
+ * stopped (warn); `tagLow` moves the tag under the zoom button of the mini cards; `uid` keeps the gradient of each card apart on a page with several cards.
+ */
+export const proxmoxRackSvg = (state, uid, dim = 1, tagLow = false) => {
+  const units = Array.from({ length: 6 }, (_, r) => {
+    const y = 13 + r * 10.6;
+    const off = state === "idle" || (state === "err" && r > 0) || (state === "warn" && r >= 6 - dim);
+    const led = state === "err" && r === 0 ? PROXMOX_SCENE_TAG.err : off ? (state === "warn" ? PROXMOX_SCENE_TAG.warn : "#59616e") : r % 2 ? "#2f80ed" : "#43c463";
+    const blink = !off ? ` class="px-blink" style="animation-delay:${(r * 0.2).toFixed(1)}s"` : "";
+    return `<rect class="px-unit${off ? " off" : ""}" x="38" y="${y}" width="32" height="8" rx="1.4"/><circle${blink} cx="42" cy="${y + 4}" r="1.2" fill="${led}"/>
+      <rect class="px-slot" x="46" y="${y + 3.2}" width="${12 + ((r * 7) % 10)}" height="1.6" rx=".8"/><rect class="px-slot" x="64" y="${y + 2}" width="3" height="4" rx=".6"/>`;
+  }).join("");
+  return `<svg class="px-scene" viewBox="0 0 110 80" preserveAspectRatio="xMaxYMax meet" aria-hidden="true" focusable="false">
+    <defs><linearGradient id="px-sheen-${uid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".1"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+    <rect class="px-rack" x="34" y="7" width="40" height="73" rx="3"/><rect x="34" y="7" width="40" height="73" rx="3" fill="url(#px-sheen-${uid})"/>
+    <rect class="px-top" x="38" y="9.2" width="32" height="1.4" rx=".7"/>${units}
+    <g transform="translate(88 ${tagLow ? 56 : 22})"><rect x="-12" y="-8" width="24" height="16" rx="3" fill="${PROXMOX_SCENE_TAG[state]}"/><text y="3" text-anchor="middle" font-size="7" font-weight="700" fill="#fff" font-family="sans-serif">PVE</text></g>
+  </svg>`;
+};
+
+/**
+ * The network uplink of the banner: a cable along the top of the ground strip into the rack, its packets in the
+ * state's colour. Running: packets flowing in; warning: slower, sparser packets; node down: red dashes blinking, no
+ * flow; stopped: a grey cable, nothing moving.
+ */
+export const UPLINK_MODES = { ok: "flow", warn: "slow", err: "cut", idle: "still" };
+export const uplinkMode = (state) => UPLINK_MODES[state] || "still";
+export const proxmoxUplinkHtml = (state) => `<div class="px-cable ${uplinkMode(state)}" aria-hidden="true"></div>`;
+
+// The banner: 90 px high, a server room's wall, the rack at its right and a 10 px concrete strip edge to edge at its
+// bottom; day and night pictures. Where the text and the buttons go is the card's or the panel's.
+export const PROXMOX_BANNER_STYLE = `
+  .banner { --st:var(--tone-good); position:relative; overflow:hidden; height:90px; flex:none; color:#1b2533; background:#e3e8ef; }
+  .banner.night { color:#fff; background:#161c28; }
+  .banner.warn { --st:var(--tone-warn); } .banner.err { --st:var(--tone-bad); } .banner.idle { --st:#8a94a3; }
+  .px-ground { position:absolute; left:0; right:0; bottom:0; height:10px; background:#9aa1a9; box-shadow:inset 0 2px 0 #b5bbc2; }
+  .night .px-ground { background:#2c323b; box-shadow:inset 0 2px 0 #39404a; }
+  .px-scene { position:absolute; right:0; bottom:10px; height:80px; width:110px; }
+  .px-rack { fill:#2a3038; } .night .px-rack { fill:#262c35; stroke:#3a4352; stroke-width:.8; }
+  .px-top { fill:#3d4552; }
+  .px-unit { fill:#3d4552; } .px-unit.off { fill:#333a45; }
+  .px-slot { fill:#5c6678; } .err .px-rack, .idle .px-rack { fill:#2f343c; }
+  .px-blink { animation:px-blink 1.2s steps(2) infinite; }
+  @keyframes px-blink { 50% { opacity:.2; } }
+  /* The uplink (see proxmoxUplinkHtml): it runs under the rack, whose left side is 76 px from the banner's right. Every
+     cycle divides 2.4 s, the GIFs' loop. */
+  .px-cable { position:absolute; left:0; right:72px; bottom:10px; height:4px; background:#5c6678; border-radius:0 2px 2px 0; }
+  .night .px-cable { background:#3a4352; }
+  .px-cable::after { content:""; position:absolute; left:0; right:0; top:1px; height:2px; }
+  .px-cable.flow::after { background:repeating-linear-gradient(90deg, var(--st) 0 6px, transparent 6px 18px); animation:px-flow .6s linear infinite; }
+  .px-cable.slow::after { background:repeating-linear-gradient(90deg, var(--st) 0 6px, transparent 6px 36px); animation:px-flow-slow 2.4s linear infinite; }
+  .px-cable.cut::after { background:repeating-linear-gradient(90deg, var(--st) 0 4px, transparent 4px 10px); animation:px-blink 1.2s steps(2) infinite; }
+  .px-cable.still::after { display:none; }
+  @keyframes px-flow { to { background-position:18px 0; } }
+  @keyframes px-flow-slow { to { background-position:36px 0; } }
+  @media (prefers-reduced-motion: reduce) { .px-blink, .px-cable::after { animation:none !important; } }
+  .banner .badge { position:relative; color:var(--st); background:rgba(255,255,255,.62); box-shadow:inset 0 0 0 1px rgba(27,37,51,.12); }
+  .banner.night .badge { background:rgba(255,255,255,.12); box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); }
+  /* Pills on the wall: a dot and the label in their colour (the status pill in the icon's, --st), on frosted glass. */
+  .banner .pill { --c:#8a94a3; display:inline-flex; align-items:center; gap:4px; padding:1px 8px; line-height:16px; font-size:11px; font-weight:500;
+                  background:color-mix(in srgb, var(--c) 18%, rgba(255,255,255,.78)); color:color-mix(in srgb, var(--c) 45%, #0d2a45); }
+  .banner .pill::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--c); flex:none; }
+  .banner .pill.good { --c:var(--tone-good); } .banner .pill.warn { --c:var(--tone-warn); } .banner .pill.bad { --c:var(--tone-bad); } .banner .pill.st { --c:var(--st); }
+  .banner.night .pill { background:color-mix(in srgb, var(--c) 30%, rgba(8,18,38,.55)); color:color-mix(in srgb, var(--c) 35%, #ffffff); }
+`;
+
 export const PROXMOX_COLORS = { cpu: "#378add", ram: "#7f77dd", disk: "#1d9e75" };
 
 /** Styles shared by the panel and the cards: tones, pills, buttons (never filled), rings, meta lines. */

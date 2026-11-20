@@ -212,3 +212,83 @@ test("disks and datastores tabs appear only when Proxmox Extended Sensors offers
   p._inv = { ...p._inv, disk: [], pbs: [] };
   assert.ok(!p._tabs().includes("disks") && !p._tabs().includes("datastores"));
 });
+
+test("leaving the panel with a confirmation open closes it without pressing", () => {
+  const calls = [];
+  const p = panel(calls);
+  p._askOrPress("containers", p._find("dev_202"), "restart");
+  assert.ok(p._confirm);
+  p.disconnectedCallback();
+  assert.equal(p._confirm, null);
+  assert.equal(calls.length, 0);
+});
+
+test("top bar: the worst state over every machine, its pill and the node names", () => {
+  const p = panel();
+  const h = p._headerState();
+  assert.equal(h.state, "warn"); // some machines stopped or suspended in the mock
+  assert.match(h.pill, /^Running: \d+\/\d+$/);
+  assert.equal(h.sub, "pve1"); // the running count is in the pill, not repeated
+  const up = Object.fromEntries(
+    [...p._items("vm"), ...p._items("container")].map((g) => [g.entities.status, { state: "running", attributes: {} }]),
+  );
+  p._hass = { ...p._hass, states: { ...states, ...up } };
+  const ok = p._headerState();
+  assert.equal(ok.state, "ok");
+  assert.equal(ok.pill, "Online");
+  assert.match(ok.sub, /^pve1 · Running: (\d+)\/\1$/);
+  p._hass = { ...p._hass, states: { ...states, "sensor.pve1_status": { state: "offline", attributes: {} } } };
+  assert.deepEqual([p._headerState().state, p._headerState().pill], ["err", "Offline"]);
+  p._inv = null;
+  assert.deepEqual(p._headerState(), { state: "idle", dim: 1, pill: "", sub: "" });
+});
+
+test("top bar: each part written only when its markup changed, night with the dark theme only", () => {
+  const p = panel();
+  const writes = { scene: 0, hinfo: 0, hbtns: 0 };
+  const part = (cls) => ({
+    set innerHTML(_v) {
+      writes[cls]++;
+    },
+  });
+  const parts = { scene: part("scene"), hinfo: part("hinfo"), hbtns: part("hbtns") };
+  const banner = { className: "", querySelector: (sel) => parts[sel.slice(1)] || null };
+  p.shadowRoot.querySelector = (sel) => (sel === ".banner" ? banner : null);
+  p._header = {};
+  p._inv.configured = true;
+  p._renderHeader();
+  p._renderHeader();
+  assert.deepEqual(writes, { scene: 1, hinfo: 1, hbtns: 1 });
+  assert.equal(banner.className, "banner warn");
+  assert.match(p._header.hbtns, /data-action="reload"/);
+  assert.match(p._header.hbtns, /href="\/config\/integrations\/integration\/proxmoxve"/);
+  assert.match(p._header.hinfo, /class="pill st" title="Running: /);
+  p._hass = { ...p._hass, themes: { darkMode: true } };
+  p._renderHeader();
+  assert.equal(banner.className, "banner warn night");
+  assert.deepEqual(writes, { scene: 1, hinfo: 1, hbtns: 1 });
+});
+
+test("refresh: the inventory read again, the button turning meanwhile", async () => {
+  const p = panel();
+  const seen = [];
+  p._renderHeader = () => seen.push(!!p._reloading);
+  p._load = async () => seen.push("load");
+  await Promise.all([p._reload(), p._reload()]); // a second press while loading does nothing
+  assert.deepEqual(seen, [true, "load", false]);
+});
+
+test("an address on Disks or Datastores opens that tab once the inventory has it", () => {
+  const p = panel();
+  const inv = p._inv;
+  p._inv = null;
+  p.route = { path: "/disks" };
+  p._render();
+  assert.equal(p._tab, "nodes"); // not offered before the inventory
+  p._inv = inv;
+  p._render();
+  assert.equal(p._tab, "disks");
+  p._goTab("vms");
+  p._render();
+  assert.equal(p._tab, "vms");
+});

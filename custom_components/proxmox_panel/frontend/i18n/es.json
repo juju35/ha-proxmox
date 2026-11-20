@@ -7,6 +7,7 @@
   "backups": "Copias de seguridad",
   "settings": "Ajustes",
   "open_integration": "Integración Proxmox VE",
+  "refresh": "Actualizar",
   "loading": "Cargando…",
   "no_proxmox": "La integración Proxmox VE aún no está configurada. Añádela con tu servidor Proxmox: este panel muestra lo que ofrece.",
   "add_proxmox": "Añadir la integración Proxmox VE",

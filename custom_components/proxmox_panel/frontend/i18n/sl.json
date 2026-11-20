@@ -7,6 +7,7 @@
   "backups": "Varnostne kopije",
   "settings": "Nastavitve",
   "open_integration": "Integracija Proxmox VE",
+  "refresh": "Osveži",
   "loading": "Nalaganje…",
   "no_proxmox": "Integracija Proxmox VE še ni nastavljena. Dodajte jo s svojim strežnikom Proxmox: ta plošča prikazuje, kar ponuja.",
   "add_proxmox": "Dodaj integracijo Proxmox VE",

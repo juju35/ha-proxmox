@@ -5,6 +5,7 @@ from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.proxmox_panel.const import (
+    BADGE_URL,
     CARDS_URL,
     COMMON_URL,
     DEFAULTS,
@@ -42,6 +43,8 @@ async def test_panel_and_icons(hass: HomeAssistant, stub_frontend):
     assert panel.sidebar_icon == PANEL_ICON == "proxmox_panel:logo"
     assert panel.require_admin is True
     assert any("proxmox-icons.js" in call.args[1] for call in stub_frontend.call_args_list)
+    # The sidebar count, loaded on every page, versioned
+    assert any(call.args[1] == f"{BADGE_URL}?v={VERSION}" for call in stub_frontend.call_args_list)
     await hass.config_entries.async_unload(entry.entry_id)
     assert PANEL_PATH not in hass.data["frontend_panels"]
 
@@ -106,7 +109,11 @@ async def test_cards_resource_and_files(hass: HomeAssistant, hass_client):
     await resources.async_get_info()
     assert [item["url"] for item in resources.async_items()] == [f"{CARDS_URL}?v={VERSION}"]
     client = await hass_client()
-    for url, marker in ((CARDS_URL, f'PROXMOX_CARDS_VERSION = "{VERSION}"'), (COMMON_URL, "export const proxmoxRing")):
+    for url, marker in (
+        (CARDS_URL, f'PROXMOX_CARDS_VERSION = "{VERSION}"'),
+        (COMMON_URL, "export const proxmoxRing"),
+        (BADGE_URL, "proxmoxProblems"),
+    ):
         resp = await client.get(url)
         assert resp.status == 200
         assert marker in await resp.text()

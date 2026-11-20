@@ -18,6 +18,7 @@ Home Assistant integration that adds a **Proxmox** panel to the sidebar and **Pr
 
 ## Features
 
+- **Illustrated top bar**: the cards' server room across the panel (the rack's lights and the network uplink follow the worst state of your nodes and machines, day picture with a light theme, night with a dark one), the round Proxmox icon in that state's colour, a status pill (Online, the machines running when some are stopped, Offline), the node names, and round **Refresh** and **Proxmox VE integration** buttons; text tabs under it
 - **Nodes**: each node with its CPU, RAM and disk rings (the last 24 hours of CPU and RAM drawn behind them), uptime, CPUs, Proxmox VE version, pending update, how many virtual machines and containers run, and the node-wide actions (start all, suspend all, stop all, restart, shut down)
 - **VMs** and **Containers**: one row per machine with its status, CPU, RAM and uptime, and the action that fits (start a stopped one, restart or shut down a running one, resume a suspended one); its name unfolds the details (RAM, disk, network download / upload, CPUs) and every other action that fits its status, with a link to the machine in the Proxmox web interface. Search by name or ID, filter by node
 - **Storage**: one gauge per storage (green, amber from 75 %, red from 90 %), with used, free and total space, and its active and shared state
@@ -27,7 +28,7 @@ Home Assistant integration that adds a **Proxmox** panel to the sidebar and **Pr
 - **Settings**: stopped machines shown or not, the confirmation, inactive storage hidden
 - **Administrators only**: the panel and its commands are kept for administrators
 - **Cards** for your dashboards, seen by every user: a node card (`proxmox-card`) and its mini card, a virtual machine or container card (`proxmox-guest-card`) and its mini card, with an illustrated header (a server rack whose lights and network uplink follow the state, day and night) and the visual editor; their actions are offered to administrators only
-- The **Proxmox logo** as the sidebar icon
+- The **Proxmox logo** as the sidebar icon, with a red **count** on it when something needs looking at: the nodes down plus the machines unavailable on a node that is up (administrators only, like the panel)
 - Light and dark themes, phones and desktops, 22 languages
 - No connection to Proxmox of its own: the panel reads the entities of the Proxmox VE integration and presses its buttons, with the permissions you gave it
 
@@ -72,6 +73,10 @@ Then **Settings → Devices & services → Add integration → Proxmox Panel**: 
 ## Panel
 
 The **Proxmox** entry of the sidebar, at `/proxmox` (each tab has its own address: `/proxmox/vms`, `/proxmox/containers`, `/proxmox/storage`, `/proxmox/backups`, `/proxmox/settings`). It is for administrators only: other users do not see it in the sidebar, and its commands refuse them.
+
+At its top, a 90 px illustrated bar, as the cards' headers: the server room's wall, the rack and its floor strip edge to edge; the round Proxmox icon in the colour of the worst state (green when every machine runs, amber when some are stopped or suspended, red when a node is down); the title with its status pill; the node names (and how many machines run); and round **Refresh** (reads the list of nodes and machines again) and **Proxmox VE integration** buttons. The night picture follows Home Assistant's dark theme. On a narrow screen the picture, the subtitle and the Refresh button make room, and the pill keeps its dot (its label in its tooltip).
+
+The sidebar entry carries a red count, like Home Assistant's notifications count, when nodes are down or machines are unavailable on a node that is up (a machine of a node down is counted with its node); none when all is well.
 
 | Light | Dark |
 |---|---|
@@ -191,6 +196,8 @@ The banner's animations: the status lights of the rack and its network uplink, a
 The Proxmox VE integration creates one device per node, virtual machine, container and storage. The panel's integration reads the device and entity registries and tells the panel which entity is which: each device is recognized by its identifier (`<entry>_node_<id>`, `<entry>_vm_<vmid>`, `<entry>_container_<vmid>`, `<entry>_storage_<name>`), and each entity by the end of its unique ID (`node_cpu`, `vm_memory`, `start`, `snapshot_create`…), so renamed entities and entity IDs in another language are supported. The custom Proxmox VE integration is read the same way, from its own identifiers (`<entry>_NODE_<node>`, `<entry>_QEMU_<vmid>`, `<entry>_LXC_<vmid>`, `<entry>_STORAGE_<name>`) and description keys (`cpu`, `memory_used_perc`, `status_raw`, `startall`…; `<entry>_backup_<node>_finished` for the last backup). Disabled entities are reported too, which is how the Backups tab knows that the backup sensors are off.
 
 The cards get the same inventory from a command every user may call (`proxmox_panel/cards`), kept 5 minutes for every card of the page: it names the entities, whose values any user can already read in their states.
+
+The inventory is scanned again only when the device or entity registry changes, or a Proxmox entry changes state or title; the panel, the cards and the sidebar count (every 5 minutes) reuse the last scan otherwise.
 
 The panel and the cards then read the states as Home Assistant updates them (every 60 seconds by default in the Proxmox VE integration), and an action is a press of the matching button entity (`button.press`). The 24-hour curves come from the recorder's history of the nodes' CPU and RAM sensors. Several Proxmox VE servers (several entries) are shown together, with a node filter.
 

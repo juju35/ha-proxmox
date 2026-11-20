@@ -7,6 +7,7 @@
   "backups": "Sikkerhedskopier",
   "settings": "Indstillinger",
   "open_integration": "Proxmox VE-integration",
+  "refresh": "Opdater",
   "loading": "Indlæser…",
   "no_proxmox": "Proxmox VE-integrationen er ikke sat op endnu. Tilføj den med din Proxmox-server: dette panel viser, hvad den tilbyder.",
   "add_proxmox": "Tilføj Proxmox VE-integrationen",

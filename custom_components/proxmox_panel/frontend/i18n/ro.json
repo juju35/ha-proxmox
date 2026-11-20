@@ -7,6 +7,7 @@
   "backups": "Copii de rezervă",
   "settings": "Setări",
   "open_integration": "Integrarea Proxmox VE",
+  "refresh": "Reîmprospătează",
   "loading": "Se încarcă…",
   "no_proxmox": "Integrarea Proxmox VE nu este încă configurată. Adaug-o cu serverul tău Proxmox: acest panou arată ce oferă.",
   "add_proxmox": "Adaugă integrarea Proxmox VE",
