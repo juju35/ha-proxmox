@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.2 - 2026-11-20
+
+### Fixes
+- A confirmation left open (*Restart: jellyfin?*) is closed without acting when the panel or the card leaves the page, instead of being shown again on the way back.
+- The mini cards' frosted zoom button gets the `-webkit-backdrop-filter` prefix for older Safari and the iOS companion app.
+
 ## 1.4.1 - 2026-11-18
 
 ### Fixes
