@@ -18,7 +18,9 @@ from typing import Any
 import voluptuous as vol
 from homeassistant.components import panel_custom, websocket_api
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 
 from .const import (
     CONF_CONFIRM_ACTIONS,
@@ -28,6 +30,8 @@ from .const import (
     PANEL_PATH,
     PANEL_TITLE,
     PANEL_URL,
+    PROXMOX_DOMAIN,
+    PROXMOX_SENSORS_DOMAIN,
     VERSION,
 )
 from .discovery import async_inventory
@@ -58,27 +62,54 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     )
 
 
+# The last inventory, kept until the device or entity registry changes or a Proxmox entry changes state or title
+INVENTORY_CACHE = f"{DOMAIN}_inventory"
+
+
+def _entries_key(hass: HomeAssistant) -> tuple:
+    return tuple(
+        (entry.entry_id, entry.state.value, entry.title)
+        for domain in (PROXMOX_DOMAIN, PROXMOX_SENSORS_DOMAIN)
+        for entry in hass.config_entries.async_entries(domain)
+    )
+
+
+@callback
+def cached_inventory(hass: HomeAssistant) -> dict[str, Any]:
+    """The inventory, scanned again only when something it reads may have changed (not on every panel or card call)."""
+    key = _entries_key(hass)
+    cache = hass.data.get(INVENTORY_CACHE)
+    if cache is None or cache[0] != key:
+        cache = hass.data[INVENTORY_CACHE] = (key, async_inventory(hass).as_dict())
+    return cache[1]
+
+
 @callback
 def async_register_commands(hass: HomeAssistant) -> None:
-    """The panel's WebSocket commands."""
+    """The panel's WebSocket commands, and the inventory dropped when the registries change."""
     for command in (_ws_inventory, _ws_cards, _ws_settings, _ws_update_settings):
         websocket_api.async_register_command(hass, command)
+
+    @callback
+    def _drop(_: Event) -> None:
+        hass.data.pop(INVENTORY_CACHE, None)
+
+    hass.bus.async_listen(dr.EVENT_DEVICE_REGISTRY_UPDATED, _drop)
+    hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, _drop)
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/inventory"})
 @websocket_api.require_admin
 @callback
 def _ws_inventory(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict) -> None:
-    connection.send_result(msg["id"], {**async_inventory(hass).as_dict(), "settings": settings(_entry(hass))})
+    connection.send_result(msg["id"], {**cached_inventory(hass), "settings": settings(_entry(hass))})
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/cards"})
 @callback
 def _ws_cards(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict) -> None:
     current = settings(_entry(hass))
-    connection.send_result(
-        msg["id"], {**async_inventory(hass).as_dict(), "confirm_actions": current[CONF_CONFIRM_ACTIONS]}
-    )
+    connection.send_result(msg["id"], {**cached_inventory(hass), "confirm_actions": current[CONF_CONFIRM_ACTIONS]})
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/settings"})
