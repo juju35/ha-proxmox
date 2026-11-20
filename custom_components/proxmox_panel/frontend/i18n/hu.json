@@ -7,6 +7,7 @@
   "backups": "Biztonsági mentések",
   "settings": "Beállítások",
   "open_integration": "Proxmox VE integráció",
+  "refresh": "Frissítés",
   "loading": "Betöltés…",
   "no_proxmox": "A Proxmox VE integráció még nincs beállítva. Add hozzá a Proxmox szervereddel: ez a panel azt mutatja, amit kínál.",
   "add_proxmox": "Proxmox VE integráció hozzáadása",

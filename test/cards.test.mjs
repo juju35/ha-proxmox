@@ -352,3 +352,17 @@ test("a card that leaves the page with a confirmation open closes it without pre
   assert.doesNotMatch(card._card(), /Restart: jellyfin\?/);
   assert.equal(calls.length, 0);
 });
+
+test("sidebar count: the nodes down plus the machines unavailable on a node that is up", async () => {
+  const { inventory, states } = await import("../scripts/mock-states.mjs");
+  const { common } = await import("./load.mjs");
+  assert.equal(common.proxmoxProblems({ states }, inventory), 0);
+  const vm = inventory.vm[0];
+  const off = { state: "unavailable", attributes: {} };
+  const gone = { ...states, [vm.entities.status]: off, [vm.entities.running]: off };
+  assert.equal(common.proxmoxProblems({ states: gone }, inventory), 1);
+  // The node down: counted once, its machines with it
+  const down = { ...gone, "sensor.pve1_status": { state: "offline", attributes: {} } };
+  assert.equal(common.proxmoxProblems({ states: down }, inventory), 1);
+  assert.equal(common.proxmoxProblems({ states }, null), 0);
+});

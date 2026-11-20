@@ -7,6 +7,7 @@
   "backups": "Backups",
   "settings": "Einstellungen",
   "open_integration": "Proxmox-VE-Integration",
+  "refresh": "Aktualisieren",
   "loading": "Wird geladen…",
   "no_proxmox": "Die Proxmox-VE-Integration ist noch nicht eingerichtet. Füge sie mit deinem Proxmox-Server hinzu: Dieses Panel zeigt, was sie bietet.",
   "add_proxmox": "Proxmox-VE-Integration hinzufügen",

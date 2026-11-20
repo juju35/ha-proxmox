@@ -7,6 +7,7 @@
   "backups": "Резервне копије",
   "settings": "Подешавања",
   "open_integration": "Интеграција Proxmox VE",
+  "refresh": "Освежи",
   "loading": "Учитавање…",
   "no_proxmox": "Интеграција Proxmox VE још није подешена. Додајте је са својим Proxmox сервером: овај панел приказује шта она нуди.",
   "add_proxmox": "Додај интеграцију Proxmox VE",

@@ -4,7 +4,7 @@
  *
  * A sidebar panel over the core Proxmox VE integration (proxmoxve). It reads the states of its entities and acts by
  * pressing its buttons; the integration's own command (proxmox_panel/inventory) only says which entity is which.
- * Six tabs under the toolbar, as in Smart Comfort (text tabs, the active one underlined, the tab in the address,
+ * The cards' illustrated header as its top bar (status pill, refresh and integration buttons), then six tabs under it, as in Smart Comfort (text tabs, the active one underlined, the tab in the address,
  * Settings last):
  * - Nodes: each node with its CPU, RAM and disk rings (24 h curves behind CPU and RAM), uptime, pending updates, how
  *   many virtual machines and containers run, and the node-wide actions;
@@ -45,6 +45,10 @@ import {
   proxmoxHistory,
   proxmoxHealthBand,
   proxmoxRing,
+  proxmoxRackSvg,
+  proxmoxSceneOf,
+  proxmoxUplinkHtml,
+  PROXMOX_BANNER_STYLE,
   PROXMOX_COLORS,
   PROXMOX_SHARED_STYLE,
   PROXMOX_VARS,
@@ -59,19 +63,48 @@ export class ProxmoxPanel extends HTMLElement {
   static STYLE = `${PROXMOX_SHARED_STYLE}
     :host { display:block; min-height:100%; background:var(--primary-background-color); color:var(--primary-text-color);
             ${PROXMOX_VARS} }
-    .toolbar { height:var(--header-height, 56px); display:flex; align-items:center; gap:8px; padding:0 12px; box-sizing:border-box;
-               background:var(--app-header-background-color, var(--primary-color)); color:var(--app-header-text-color, #fff);
-               border-bottom:var(--app-header-border-bottom, none); font-size:20px; position:sticky; top:0; z-index:2; }
-    .toolbar .grow { flex:1; }
-    .toolbar a { color:inherit; display:flex; padding:8px; border-radius:50%; }
-    .toolbar a .i { width:22px; height:22px; }
-    .toolbar a:hover { background:rgba(255,255,255,.12); }
-    .tabs { display:flex; gap:4px; padding:0 12px; overflow-x:auto; background:var(--app-header-background-color, var(--primary-color));
-            position:sticky; top:var(--header-height, 56px); z-index:2; }
-    .tab { background:none; border:none; border-bottom:2px solid transparent; color:var(--app-header-text-color, #fff); opacity:.75;
-           padding:12px 14px; font:inherit; font-size:14px; cursor:pointer; white-space:nowrap; }
-    .tab:hover, .tab:focus-visible { opacity:1; outline:none; }
-    .tab.active { opacity:1; border-bottom-color:var(--app-header-text-color, #fff); }
+    /* The top bar: the cards' illustrated header across the page (server-room wall, rack, ground strip), the round
+       Proxmox icon in the worst state's colour, the title and its status pill, the round frosted buttons at the right. */
+    ${PROXMOX_BANNER_STYLE}
+    .banner { container:px-bar / inline-size; }
+    .banner .px-scene { right:76px; }
+    .banner .px-cable { right:148px; }
+    .htext { position:absolute; left:8px; top:0; bottom:10px; right:186px; display:flex; align-items:center; gap:8px; min-width:0; }
+    .htext ha-menu-button { flex:none; color:inherit; }
+    .hinfo { display:contents; }
+    .htext .badge .i { width:22px; height:22px; }
+    .tt { min-width:0; display:flex; flex-direction:column; gap:2px; }
+    .trow { display:flex; align-items:center; gap:8px; min-width:0; }
+    .htext .n { font-size:18px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+    .trow .pill { flex:none; }
+    .htext .s { font-size:12.5px; color:#4a5768; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .night .htext .s { color:rgba(255,255,255,.78); }
+    /* The pill's dot alone when the title and its label do not fit (its label in its tooltip) */
+    .trow.dot-only .pill { font-size:0; gap:0; padding:0; width:16px; height:16px; justify-content:center; }
+    .hbtns { position:absolute; right:8px; top:0; bottom:10px; display:flex; align-items:center; gap:6px; }
+    .hbtn { all:unset; box-sizing:border-box; cursor:pointer; width:36px; height:36px; border-radius:50%; display:grid; place-items:center; flex:none;
+            color:#33506b; background:rgba(255,255,255,.55); box-shadow:inset 0 0 0 1px rgba(255,255,255,.7); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
+    .hbtn:hover { background:rgba(255,255,255,.75); }
+    .night .hbtn { color:#fff; background:rgba(255,255,255,.12); box-shadow:inset 0 0 0 1px rgba(255,255,255,.2); }
+    .night .hbtn:hover { background:rgba(255,255,255,.22); }
+    .hbtn:focus-visible { outline:2px solid var(--px-accent); outline-offset:1px; }
+    .hbtn .i { width:18px; height:18px; }
+    .hbtn.spinning .i { animation:px-spin 1s linear infinite; }
+    @keyframes px-spin { to { transform:rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .hbtn.spinning .i { animation:none; } }
+    /* Narrow: no picture, no subtitle, the pill as its dot, the settings button alone */
+    @container px-bar (max-width: 340px) {
+      .px-scene, .px-cable, .htext .s, .hbtn[data-action="reload"] { display:none; }
+      .htext { right:52px; }
+      .trow .pill { font-size:0; gap:0; padding:0; width:16px; height:16px; justify-content:center; }
+    }
+    /* Text tabs under the bar, on the card background, the active one underlined in the Proxmox orange */
+    .tabs { display:flex; gap:2px; padding:0 8px; overflow-x:auto; scrollbar-width:none; background:var(--card-background-color, #fff);
+            border-bottom:1px solid var(--divider-color, rgba(0,0,0,.12)); position:sticky; top:0; z-index:2; }
+    .tab { background:none; border:none; border-bottom:2px solid transparent; color:var(--secondary-text-color);
+           padding:13px 12px 11px; font:inherit; font-size:14px; cursor:pointer; white-space:nowrap; }
+    .tab:hover { color:var(--primary-text-color); }
+    .tab.active { color:var(--primary-text-color); font-weight:600; border-bottom-color:var(--px-accent); }
     main { max-width:1040px; margin:0 auto; padding:16px; box-sizing:border-box; display:flex; flex-direction:column; gap:16px; }
     section { display:flex; flex-direction:column; gap:16px; }
     section[hidden] { display:none; }
@@ -386,11 +419,8 @@ export class ProxmoxPanel extends HTMLElement {
     if (!tabs.includes(this._tab)) this._tab = "nodes";
     root.innerHTML = `
       <style>${ProxmoxPanel.STYLE}</style>
-      <div class="toolbar">
-        <ha-menu-button></ha-menu-button>
-        <span class="grow">${esc(this._t("title"))}</span>
-        <a href="/config/integrations/integration/proxmoxve" title="${esc(this._t("open_integration"))}" aria-label="${esc(this._t("open_integration"))}">${proxmoxPanelIcon("cog")}</a>
-      </div>
+      <header class="banner idle"><div class="px-ground"></div><div class="scene"></div>
+        <div class="htext"><ha-menu-button></ha-menu-button><div class="hinfo"></div></div><div class="hbtns"></div></header>
       <div class="tabs" role="tablist">${tabs
         .map((tab) => {
           const selected = tab === this._tab;
@@ -414,8 +444,73 @@ export class ProxmoxPanel extends HTMLElement {
         this._goTab(tabs[(i + step + tabs.length) % tabs.length], true);
       });
     }
+    root.querySelector(".hbtns").addEventListener("click", (ev) => ev.target.closest?.("[data-action=reload]") && this._reload());
+    this._header = {};
+    this._renderHeader();
     this._bodies = {};
     this._renderTab(this._tab, true);
+  }
+
+  // ── Top bar ──
+
+  /** The top bar's state over every node and machine (idle until the inventory is in), its pill and subtitle. */
+  _headerState() {
+    const nodes = this._items("node");
+    if (!nodes.length) return { state: "idle", dim: 1, pill: "", sub: "" };
+    const guests = [...this._items("vm"), ...this._items("container")];
+    const scene = proxmoxSceneOf(this._hass, nodes, guests);
+    const running = guests.filter((g) => this._status(g) === "running").length;
+    const counts = this._t("c_running", { running, n: guests.length });
+    const pill = scene.state === "err" ? this._t("st_offline") : scene.state === "warn" ? counts : this._t("st_online");
+    const names = nodes.map((n) => n.name).join(", ");
+    // The machines running are in the pill on a warning: not repeated in the subtitle then.
+    return { ...scene, pill, sub: scene.state === "warn" || !guests.length ? names : `${names} · ${counts}` };
+  }
+
+  /** The top bar, each part written only when its markup changed (the rack keeps blinking, the menu button stays). */
+  _renderHeader() {
+    const root = this.shadowRoot;
+    const banner = root.querySelector?.(".banner");
+    if (!banner) return;
+    const esc = proxmoxPanelEsc;
+    const h = this._headerState();
+    banner.className = `banner ${h.state}${this._hass?.themes?.darkMode ? " night" : ""}`;
+    const parts = {
+      scene: `${proxmoxUplinkHtml(h.state)}${proxmoxRackSvg(h.state, "panel", h.dim)}`,
+      hinfo: `<span class="badge">${proxmoxPanelIcon("logo")}</span><div class="tt"><div class="trow"><span class="n">${esc(this._t("title"))}</span>${
+        h.pill ? `<span class="pill st" title="${esc(h.pill)}">${esc(h.pill)}</span>` : ""
+      }</div>${h.sub ? `<span class="s" title="${esc(h.sub)}">${esc(h.sub)}</span>` : ""}</div>`,
+      hbtns: `${this._inv?.configured ? `<button class="hbtn${this._reloading ? " spinning" : ""}" data-action="reload" title="${esc(this._t("refresh"))}" aria-label="${esc(this._t("refresh"))}">${proxmoxPanelIcon("restart")}</button>` : ""}
+        <a class="hbtn" href="/config/integrations/integration/proxmoxve" title="${esc(this._t("open_integration"))}" aria-label="${esc(this._t("open_integration"))}">${proxmoxPanelIcon("cog")}</a>`,
+    };
+    for (const [cls, html] of Object.entries(parts)) {
+      if (this._header[cls] === html) continue;
+      this._header[cls] = html;
+      const el = banner.querySelector(`.${cls}`);
+      if (el) el.innerHTML = html;
+    }
+    this._fitHeader();
+  }
+
+  /** The pill as its dot alone when the whole title and its whole label do not fit beside each other. */
+  _fitHeader() {
+    const row = this.shadowRoot.querySelector?.(".trow");
+    if (!row?.getClientRects?.().length) return;
+    row.classList.remove("dot-only");
+    if (row.scrollWidth > row.clientWidth + 0.5 || row.querySelector(".n")?.scrollWidth > row.querySelector(".n")?.clientWidth + 0.5) row.classList.add("dot-only");
+  }
+
+  /** The refresh button: the inventory read again (machines added or removed in Proxmox VE), the icon turning meanwhile. */
+  async _reload() {
+    if (this._reloading) return;
+    this._reloading = true;
+    this._renderHeader();
+    try {
+      await this._load();
+    } finally {
+      this._reloading = false;
+      this._renderHeader();
+    }
   }
 
   /** States changed: the shown tab's body again, only if its markup changed (the search keeps its focus). */
@@ -425,6 +520,7 @@ export class ProxmoxPanel extends HTMLElement {
       this._dirty = true;
       return;
     }
+    this._renderHeader();
     if (this._tab !== "settings") this._renderTab(this._tab);
   }
 
