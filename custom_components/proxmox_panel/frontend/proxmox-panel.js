@@ -189,6 +189,11 @@ export class ProxmoxPanel extends HTMLElement {
     proxmoxReleasePress(this);
     clearInterval(this._historyTimer);
     clearTimeout(this._retryTimer);
+    // Left with a confirmation open (another panel): closed without acting, as Cancel; drawn again on the way back.
+    if (this._confirm) {
+      this._confirm = null;
+      this._bodies = {};
+    }
     if (this._unsub) {
       this._unsub.then((off) => off()).catch(() => {});
       this._unsub = null;

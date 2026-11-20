@@ -233,7 +233,7 @@ const BANNER_STYLE = `
   .brand .i { width:14px; height:14px; }
   /* The mini cards' zoom button: 24 px frosted round in the banner's top right corner. */
   .banner .zoom { position:absolute; z-index:2; top:5px; right:5px; width:24px; height:24px; border:0; color:#33506b;
-                  background:rgba(255,255,255,.55); box-shadow:inset 0 0 0 1px rgba(255,255,255,.7); backdrop-filter:blur(4px); }
+                  background:rgba(255,255,255,.55); box-shadow:inset 0 0 0 1px rgba(255,255,255,.7); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
   .banner .zoom:hover { background:rgba(255,255,255,.75); }
   .banner.night .zoom { color:#fff; background:rgba(255,255,255,.12); box-shadow:inset 0 0 0 1px rgba(255,255,255,.2); }
   .banner.night .zoom:hover { background:rgba(255,255,255,.22); }
@@ -395,6 +395,11 @@ class ProxmoxBaseCard extends HTMLElement {
     document.fonts?.removeEventListener?.("loadingdone", this._onFonts);
     this._resize?.disconnect();
     this._fitWidth = null;
+    // Left with a confirmation open (another view, a conditional card hidden): closed without acting, as Cancel.
+    if (this._confirm) {
+      this._confirm = null;
+      this._last = null;
+    }
   }
 
   setConfig(config) {

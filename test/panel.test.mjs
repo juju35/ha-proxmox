@@ -212,3 +212,13 @@ test("disks and datastores tabs appear only when Proxmox Extended Sensors offers
   p._inv = { ...p._inv, disk: [], pbs: [] };
   assert.ok(!p._tabs().includes("disks") && !p._tabs().includes("datastores"));
 });
+
+test("leaving the panel with a confirmation open closes it without pressing", () => {
+  const calls = [];
+  const p = panel(calls);
+  p._askOrPress("containers", p._find("dev_202"), "restart");
+  assert.ok(p._confirm);
+  p.disconnectedCallback();
+  assert.equal(p._confirm, null);
+  assert.equal(calls.length, 0);
+});
