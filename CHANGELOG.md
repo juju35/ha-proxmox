@@ -10,6 +10,7 @@
 - The inventory (a scan of the device and entity registries) is kept until a registry or a Proxmox entry changes, instead of being rebuilt on every call of the panel and the cards.
 
 ### Fixes
+- An address on the Disks or Datastores tab (`/proxmox/disks`) opens that tab once the inventory is in, instead of falling back to Nodes (the README's Disks and Datastores screenshots showed the Nodes tab).
 - A confirmation left open (*Restart: jellyfin?*) is closed without acting when the panel or the card leaves the page, instead of being shown again on the way back.
 - The mini cards' frosted zoom button gets the `-webkit-backdrop-filter` prefix for older Safari and the iOS companion app.
 

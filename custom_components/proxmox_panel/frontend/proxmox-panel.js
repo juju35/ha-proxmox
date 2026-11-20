@@ -189,6 +189,8 @@ export class ProxmoxPanel extends HTMLElement {
   set route(route) {
     const path = (route?.path || "").split("/").filter(Boolean)[0];
     const tab = PROXMOX_PANEL_TABS.includes(path) ? path : "nodes";
+    // Kept for when its tab appears (Disks and Datastores wait for the inventory)
+    this._route = tab;
     if (tab !== this._tab) this._showTab(tab);
   }
 
@@ -386,6 +388,7 @@ export class ProxmoxPanel extends HTMLElement {
 
   _goTab(tab, focus) {
     if (!this._tabs().includes(tab)) return;
+    this._route = tab;
     this._showTab(tab, focus);
     const base = (this._panel?.url_path || "proxmox").replace(/^\//, "");
     try {
@@ -416,7 +419,8 @@ export class ProxmoxPanel extends HTMLElement {
     const root = this.shadowRoot;
     const esc = proxmoxPanelEsc;
     const tabs = this._tabs();
-    if (!tabs.includes(this._tab)) this._tab = "nodes";
+    if (this._route && tabs.includes(this._route)) this._tab = this._route;
+    else if (!tabs.includes(this._tab)) this._tab = "nodes";
     root.innerHTML = `
       <style>${ProxmoxPanel.STYLE}</style>
       <header class="banner idle"><div class="px-ground"></div><div class="scene"></div>
@@ -444,7 +448,7 @@ export class ProxmoxPanel extends HTMLElement {
         this._goTab(tabs[(i + step + tabs.length) % tabs.length], true);
       });
     }
-    root.querySelector(".hbtns").addEventListener("click", (ev) => ev.target.closest?.("[data-action=reload]") && this._reload());
+    root.querySelector(".hbtns")?.addEventListener("click", (ev) => ev.target.closest?.("[data-action=reload]") && this._reload());
     this._header = {};
     this._renderHeader();
     this._bodies = {};

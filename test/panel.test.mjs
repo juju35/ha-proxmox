@@ -277,3 +277,18 @@ test("refresh: the inventory read again, the button turning meanwhile", async ()
   await Promise.all([p._reload(), p._reload()]); // a second press while loading does nothing
   assert.deepEqual(seen, [true, "load", false]);
 });
+
+test("an address on Disks or Datastores opens that tab once the inventory has it", () => {
+  const p = panel();
+  const inv = p._inv;
+  p._inv = null;
+  p.route = { path: "/disks" };
+  p._render();
+  assert.equal(p._tab, "nodes"); // not offered before the inventory
+  p._inv = inv;
+  p._render();
+  assert.equal(p._tab, "disks");
+  p._goTab("vms");
+  p._render();
+  assert.equal(p._tab, "vms");
+});
