@@ -24,6 +24,8 @@ PANEL_TITLE = "Proxmox"
 # The Proxmox logo, from the icon set of frontend/proxmox-icons.js (loaded on every page)
 PANEL_ICON = "proxmox_panel:logo"
 ICONS_URL = f"{URL_BASE}/proxmox-icons.js"
+# The sidebar count (nodes down + machines unavailable), loaded on every page; it imports proxmox-common.js
+BADGE_URL = f"{URL_BASE}/proxmox-badge.js"
 
 # Settings (options of the config entry), edited in the panel's Settings tab. The panel is always for
 # administrators only: no setting opens it to other users.
