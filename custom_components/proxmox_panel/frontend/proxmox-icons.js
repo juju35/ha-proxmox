@@ -7,6 +7,37 @@ const PROXMOX_PANEL_LOGO = "M6.42 21.57C5.87 21.47 5.26 21.19 4.89 20.85L4.71 20
 
 window.customIcons = window.customIcons || {};
 window.customIcons.proxmox_panel = {
-  getIcon: async (name) => (name === "logo" ? { path: PROXMOX_PANEL_LOGO, viewBox: "0 0 24 24" } : undefined),
+  // Every name draws the logo: Home Assistant reads `.path` of the result, so an unknown name must not resolve to undefined
+  getIcon: async () => ({ path: PROXMOX_PANEL_LOGO, viewBox: "0 0 24 24" }),
   getIconList: async () => [{ name: "logo" }],
 };
+
+// Home Assistant draws an icon whose set is not registered yet as a legacy <iron-icon>, and that ha-icon keeps the
+// legacy mode for good (the flag is only cleared for MDI icons): a sidebar drawn before this module ran — the first
+// load of a page, the module not cached yet — showed the logo blank until the page was reloaded. Those icons are
+// reset and drawn again: at once, then every 250 ms until the sidebar has drawn the entry (up to 15 s).
+const PROXMOX_ICON_PREFIX = "proxmox_panel:";
+function proxmoxIconRedraw(root, depth = 0) {
+  if (!root || depth > 8) return 0;
+  let found = 0;
+  for (const el of root.querySelectorAll("*")) {
+    if (el.localName === "ha-icon" && String(el.icon || "").startsWith(PROXMOX_ICON_PREFIX)) {
+      found += 1;
+      if (el._legacy) {
+        const icon = el.icon;
+        el._legacy = false;
+        el.icon = "";
+        requestAnimationFrame(() => {
+          el.icon = icon;
+        });
+      }
+    }
+    if (el.shadowRoot) found += proxmoxIconRedraw(el.shadowRoot, depth + 1);
+  }
+  return found;
+}
+function proxmoxIconRedrawSoon(tries = 60) {
+  if (proxmoxIconRedraw(document.querySelector?.("home-assistant")?.shadowRoot) || tries <= 1) return;
+  setTimeout(() => proxmoxIconRedrawSoon(tries - 1), 250);
+}
+proxmoxIconRedrawSoon();

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.1 - 2026-11-21
+
+### Fixes
+- The Proxmox logo of the sidebar entry is drawn on a page's first load too: Home Assistant drew an icon whose set was not registered yet in its legacy mode for good, so the entry stayed blank until the page was reloaded. The icon module resets that icon and draws it again, at once and then every 250 ms until the sidebar has the entry (up to 15 s).
+- The icon set answers with the logo for any name instead of nothing, which made Home Assistant throw on an unknown `proxmox_panel:` icon.
+
 ## 1.5.0 - 2026-11-20
 
 ### Features
