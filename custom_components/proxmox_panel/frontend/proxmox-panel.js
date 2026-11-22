@@ -54,7 +54,7 @@ import {
   PROXMOX_VARS,
 } from "./proxmox-common.js";
 
-export const PROXMOX_PANEL_VERSION = "1.6.0";
+export const PROXMOX_PANEL_VERSION = "1.6.1";
 // Disks and Datastores come from Proxmox Extended Sensors: shown only when it offers them (juju35/ha-proxmox#14).
 const PROXMOX_PANEL_TABS = ["nodes", "vms", "containers", "storage", "backups", "disks", "datastores", "settings"];
 const PROXMOX_PANEL_SENSOR_TABS = { disks: "disk", datastores: "pbs" };

@@ -47,7 +47,7 @@ import {
 
 export { UPLINK_MODES, uplinkMode } from "./proxmox-common.js";
 
-export const PROXMOX_CARDS_VERSION = "1.6.0";
+export const PROXMOX_CARDS_VERSION = "1.6.1";
 const LANGUAGE_NAMES = {
   en: "English", fr: "Français", de: "Deutsch", es: "Español", sr: "Српски", "sr-Latn": "Srpski (latinica)", it: "Italiano",
   nl: "Nederlands", pt: "Português", pl: "Polski", ro: "Română", da: "Dansk", sv: "Svenska", bg: "Български", ru: "Русский",
@@ -1402,7 +1402,7 @@ if (typeof window !== "undefined") {
     { type: "proxmox-guest-mini-card", name: "Proxmox Machine Mini Card", description: "Proxmox VE virtual machines or containers on one line each, opening the full card." },
   ]) {
     if (!window.customCards.some((c) => c.type === card.type))
-      window.customCards.push({ ...card, preview: true, documentationURL: "https://github.com/juju35/ha-proxmox" });
+      window.customCards.push({ ...card, preview: false, documentationURL: "https://github.com/juju35/ha-proxmox" });
   }
   console.info(`%c PROXMOX-CARDS %c v${PROXMOX_CARDS_VERSION} `, "color: white; background: #e57000; font-weight: 700;", "color: #e57000; background: white; font-weight: 700;");
 }
