@@ -1,10 +1,15 @@
 """Constants for the Proxmox Panel integration."""
 
 DOMAIN = "proxmox_panel"
-VERSION = "1.6.2"
+VERSION = "1.7.0"
 
 # The core Proxmox VE integration, whose devices and entities the panel shows
 PROXMOX_DOMAIN = "proxmoxve"
+# The custom Proxmox VE integration (dougiteixeira/proxmoxve) moved to its own domain in 6.0 (juju35/ha-proxmox#32); its
+# devices and entities are the same as under ``proxmoxve`` before (upper-case kinds in the identifiers).
+PROXMOX_CUSTOM_DOMAIN = "proxmoxve_custom"
+# Every domain the Proxmox VE devices and entities are read from
+PROXMOX_VE_DOMAINS = (PROXMOX_DOMAIN, PROXMOX_CUSTOM_DOMAIN)
 # The Proxmox Extended Sensors integration (Javisen/proxmox_sensors, juju35/ha-proxmox#14): read the same way, from
 # its own devices and entities, which carry the resource in the device identifier and the metric in the entity's
 # translation key. It also brings a few sensors the Proxmox VE integration has no equivalent for: the node's

@@ -54,7 +54,11 @@ import {
   PROXMOX_VARS,
 } from "./proxmox-common.js";
 
-export const PROXMOX_PANEL_VERSION = "1.6.2";
+export const PROXMOX_PANEL_VERSION = "1.7.0";
+// The integrations whose entries the panel reads: the Proxmox VE ones (the custom one moved to proxmoxve_custom in 6.0,
+// #32), then Proxmox Extended Sensors
+const PROXMOX_PANEL_VE_DOMAINS = ["proxmoxve", "proxmoxve_custom"];
+const PROXMOX_PANEL_DOMAINS = [...PROXMOX_PANEL_VE_DOMAINS, "proxmox_sensors"];
 // Disks and Datastores come from Proxmox Extended Sensors: shown only when it offers them (juju35/ha-proxmox#14).
 const PROXMOX_PANEL_TABS = ["nodes", "vms", "containers", "storage", "backups", "disks", "datastores", "settings"];
 const PROXMOX_PANEL_SENSOR_TABS = { disks: "disk", datastores: "pbs" };
@@ -632,13 +636,19 @@ export class ProxmoxPanel extends HTMLElement {
     await this._load();
   }
 
+  // The Proxmox VE integration the settings button opens: the one configured, else the built-in one
+  _proxmoxDomain() {
+    const entry = (this._inv?.entries || []).find((e) => PROXMOX_PANEL_VE_DOMAINS.includes(e.domain));
+    return entry?.domain || "proxmoxve";
+  }
+
   // Reload when a Proxmox VE entry changes (set up, reloaded, removed): its devices and entities may have changed
   _subscribe() {
     if (this._unsub || !this._hass?.connection) return;
     this._unsub = this._hass.connection
       .subscribeMessage(
         (events) => {
-          if ([].concat(events || []).some((ev) => ev?.entry?.domain === "proxmoxve" || ev?.entry?.domain === "proxmox_sensors")) this._load();
+          if ([].concat(events || []).some((ev) => PROXMOX_PANEL_DOMAINS.includes(ev?.entry?.domain))) this._load();
         },
         { type: "config_entries/subscribe" },
       )
@@ -887,7 +897,7 @@ export class ProxmoxPanel extends HTMLElement {
         h.pill ? `<span class="pill st" title="${esc(h.pill)}">${esc(h.pill)}</span>` : ""
       }</div>${h.sub ? `<span class="s" title="${esc(h.sub)}">${esc(h.sub)}</span>` : ""}</div>`,
       hbtns: `${this._inv?.configured ? `<button class="hbtn${this._reloading ? " spinning" : ""}" data-action="reload" title="${esc(this._t("refresh"))}" aria-label="${esc(this._t("refresh"))}">${proxmoxPanelIcon("restart")}</button>` : ""}
-        <a class="hbtn" href="/config/integrations/integration/proxmoxve" title="${esc(this._t("open_integration"))}" aria-label="${esc(this._t("open_integration"))}">${proxmoxPanelIcon("cog")}</a>`,
+        <a class="hbtn" href="/config/integrations/integration/${encodeURIComponent(this._proxmoxDomain())}" title="${esc(this._t("open_integration"))}" aria-label="${esc(this._t("open_integration"))}">${proxmoxPanelIcon("cog")}</a>`,
     };
     for (const [cls, html] of Object.entries(parts)) {
       if (this._header[cls] === html) continue;

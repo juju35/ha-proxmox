@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.0 - 2026-11-23
+
+### Features
+- **Proxmox VE Custom 6.x** (#32): the custom Proxmox VE integration (dougiteixeira/proxmoxve) moved to its own `proxmoxve_custom` domain in 6.0, and the panel and the cards now read its entries too, alongside the built-in `proxmoxve` one (and the custom integration's 5.x entries under that domain). The panel reloads when one of its entries changes, and its integration button opens the Proxmox VE integration that is set up.
+
 ## 1.6.2 - 2026-11-22
 
 ### Performance

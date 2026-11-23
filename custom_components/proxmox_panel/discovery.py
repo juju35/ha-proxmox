@@ -12,10 +12,11 @@ gets, per device, the entity id of each "slot" it shows (``cpu``, ``memory``, ``
 whose entity is disabled (the backup sensors are disabled by default), so that it can say how to enable them.
 Nothing here talks to Proxmox: the panel reads the states, and acts by pressing the integration's buttons.
 
-The custom "Proxmox VE" integration (dougiteixeira/proxmoxve, same ``proxmoxve`` domain, juju35/ha-proxmox#12) is read
-too. Its identifiers carry the kind in upper case (``<entry>_NODE_<node>``, ``<entry>_QEMU_<vmid>``,
-``<entry>_LXC_<vmid>``, ``<entry>_STORAGE_<storage>``) and its unique ids are ``<entry>_<resource>_<key>`` with keys of
-its own (``CUSTOM_SLOTS``); the backup entities of a node are ``<entry>_backup_<node>_<key>``.
+The custom "Proxmox VE" integration (dougiteixeira/proxmoxve, juju35/ha-proxmox#12) is read too: under the same
+``proxmoxve`` domain up to 5.x, under ``proxmoxve_custom`` from 6.0 (juju35/ha-proxmox#32). Its identifiers carry the
+kind in upper case (``<entry>_NODE_<node>``, ``<entry>_QEMU_<vmid>``, ``<entry>_LXC_<vmid>``,
+``<entry>_STORAGE_<storage>``) and its unique ids are ``<entry>_<resource>_<key>`` with keys of its own
+(``CUSTOM_SLOTS``); the backup entities of a node are ``<entry>_backup_<node>_<key>``.
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
-from .const import PROXMOX_DOMAIN, PROXMOX_SENSORS_DOMAIN
+from .const import PROXMOX_SENSORS_DOMAIN, PROXMOX_VE_DOMAINS
 
 # Per kind of device and entity domain: the description keys of the proxmoxve integration and the panel's slot for
 # each. A key is matched as the end of the unique id, the longest first (``vm_status`` before ``status``).
@@ -466,11 +467,12 @@ def _add_sensors_inventory(hass: HomeAssistant, inventory: Inventory, devices, e
 def async_inventory(hass: HomeAssistant) -> Inventory:
     """The nodes, machines, containers, storages, disks and backups of every Proxmox entry, with their entities.
 
-    Three integrations are read the same way: the built-in Proxmox VE, the custom Proxmox VE (same ``proxmoxve``
-    domain, upper-case identifiers) and Proxmox Extended Sensors (``proxmox_sensors``, from its translation keys).
+    Three integrations are read the same way: the built-in Proxmox VE, the custom Proxmox VE (``proxmoxve`` up to
+    5.x, ``proxmoxve_custom`` from 6.0, upper-case identifiers) and Proxmox Extended Sensors (``proxmox_sensors``,
+    from its translation keys).
     """
     inventory = Inventory()
-    entries = hass.config_entries.async_entries(PROXMOX_DOMAIN)
+    entries = [entry for domain in PROXMOX_VE_DOMAINS for entry in hass.config_entries.async_entries(domain)]
     inventory.configured = bool(entries)
     devices = dr.async_get(hass)
     entities = er.async_get(hass)
@@ -481,6 +483,7 @@ def async_inventory(hass: HomeAssistant) -> Inventory:
                 "title": entry.title,
                 "state": entry.state.value,
                 "loaded": entry.state is ConfigEntryState.LOADED,
+                "domain": entry.domain,
             }
         )
         for device in dr.async_entries_for_config_entry(devices, entry.entry_id):
@@ -488,7 +491,7 @@ def async_inventory(hass: HomeAssistant) -> Inventory:
                 (
                     p
                     for domain, identifier in device.identifiers
-                    if domain == PROXMOX_DOMAIN and (p := parse_identifier(entry.entry_id, identifier))
+                    if domain == entry.domain and (p := parse_identifier(entry.entry_id, identifier))
                 ),
                 None,
             )
@@ -505,7 +508,7 @@ def async_inventory(hass: HomeAssistant) -> Inventory:
                 url=device.configuration_url,
             )
             for ent in er.async_entries_for_device(entities, device.id, include_disabled_entities=True):
-                if ent.platform != PROXMOX_DOMAIN:
+                if ent.platform != entry.domain:
                     continue
                 slot = (
                     custom_slot_of(entry.entry_id, kind, key, ent.domain, ent.unique_id)

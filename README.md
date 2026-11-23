@@ -37,12 +37,12 @@ Home Assistant integration that adds a **Proxmox** panel to the sidebar and **Pr
 | | Integration | What it is used for |
 |---|---|---|
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/.github/assets/logo-proxmox.png" alt="Proxmox" height="32"> | [Proxmox VE](https://www.home-assistant.io/integrations/proxmoxve/) (built in) | Everything the panel and the cards show: its devices (nodes, virtual machines, containers, storage), their sensors, binary sensors and update entities, and its buttons for the actions |
-| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/.github/assets/logo-proxmox.png" alt="Proxmox" height="32"> | [Proxmox VE (custom)](https://github.com/dougiteixeira/proxmoxve) | The same, from the custom integration of the same `proxmoxve` domain, installed in place of the built-in one |
+| <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/.github/assets/logo-proxmox.png" alt="Proxmox" height="32"> | [Proxmox VE Custom](https://github.com/dougiteixeira/proxmoxve) | The same, from the custom integration: its own `proxmoxve_custom` domain from 6.0, or the `proxmoxve` domain in place of the built-in one up to 5.x |
 | <img src="https://raw.githubusercontent.com/juju35/ha-proxmox/main/.github/assets/logo-proxmox-sensors.png" alt="Proxmox Extended Sensors" height="32"> | [Proxmox Extended Sensors](https://github.com/Javisen/proxmox_sensors) | Its nodes, virtual machines, containers and storages, with the guests' start, stop, reboot, shut down, pause, hibernate, reset and resume buttons — and the node's temperature and health, the physical disks (SMART) and the Proxmox Backup Server datastores, which the Proxmox VE integration has no equivalent for |
 
 ## Prerequisites
 
-Home Assistant 2026.11 or later, and the [Proxmox VE integration](https://www.home-assistant.io/integrations/proxmoxve/) added with your Proxmox server (**Settings → Devices & services → Add integration → Proxmox VE**). The actions need the matching permissions on the Proxmox user or token (`VM.PowerMgmt`, `VM.Snapshot`, `Sys.PowerMgmt`): the integration only creates the buttons it is allowed to press.
+Home Assistant 2026.11 or later, and the [Proxmox VE integration](https://www.home-assistant.io/integrations/proxmoxve/) added with your Proxmox server (**Settings → Devices & services → Add integration → Proxmox VE**) — or the [Proxmox VE Custom](https://github.com/dougiteixeira/proxmoxve) integration instead. The actions need the matching permissions on the Proxmox user or token (`VM.PowerMgmt`, `VM.Snapshot`, `Sys.PowerMgmt`): the integration only creates the buttons it is allowed to press.
 
 The backup sensors of the nodes (last backup, duration, status) are **disabled by default** in the Proxmox VE integration: enable them on the node's device to see the backups in the panel. The Backups tab links to the device when they are off.
 
