@@ -30,8 +30,8 @@ from .const import (
     PANEL_PATH,
     PANEL_TITLE,
     PANEL_URL,
-    PROXMOX_DOMAIN,
     PROXMOX_SENSORS_DOMAIN,
+    PROXMOX_VE_DOMAINS,
     VERSION,
 )
 from .discovery import async_inventory
@@ -69,7 +69,7 @@ INVENTORY_CACHE = f"{DOMAIN}_inventory"
 def _entries_key(hass: HomeAssistant) -> tuple:
     return tuple(
         (entry.entry_id, entry.state.value, entry.title)
-        for domain in (PROXMOX_DOMAIN, PROXMOX_SENSORS_DOMAIN)
+        for domain in (*PROXMOX_VE_DOMAINS, PROXMOX_SENSORS_DOMAIN)
         for entry in hass.config_entries.async_entries(domain)
     )
 

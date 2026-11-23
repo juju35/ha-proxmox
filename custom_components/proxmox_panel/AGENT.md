@@ -30,4 +30,4 @@ custom_components/proxmox_panel/
 - Card actions are shown to administrators only; the panel and its commands are administrators only.
 - The panel only presses `button.*` entities of the proxmoxve integration; never talk to Proxmox directly.
 - When proxmoxve changes its description keys or identifiers, update SLOTS / parse_identifier and the tests; the custom
-  Proxmox VE integration (dougiteixeira/proxmoxve, same domain) has its own: CUSTOM_KINDS / CUSTOM_SLOTS / CUSTOM_BACKUP_SLOTS.
+  Proxmox VE integration (dougiteixeira/proxmoxve: `proxmoxve` up to 5.x, `proxmoxve_custom` from 6.0, PROXMOX_VE_DOMAINS) has its own: CUSTOM_KINDS / CUSTOM_SLOTS / CUSTOM_BACKUP_SLOTS.

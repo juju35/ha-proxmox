@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 
+import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
@@ -12,13 +13,15 @@ from custom_components.proxmox_panel import discovery, panel
 from custom_components.proxmox_panel.discovery import async_inventory, custom_slot_of, parse_identifier, slot_of
 
 PROXMOX = "proxmoxve"
+# The custom Proxmox VE integration from 6.0 (#32)
+PROXMOX_CUSTOM = "proxmoxve_custom"
 
 
 def _device(hass, entry, identifier, name, via=None):
     registry = dr.async_get(hass)
     device = registry.async_get_or_create(
         config_entry_id=entry.entry_id,
-        identifiers={(PROXMOX, f"{entry.entry_id}_{identifier}")},
+        identifiers={(entry.domain, f"{entry.entry_id}_{identifier}")},
         name=name,
         configuration_url="https://192.168.1.10:8006/",
     )
@@ -29,7 +32,7 @@ def _device(hass, entry, identifier, name, via=None):
 def _entity(hass, entry, device, domain, unique, disabled=False):
     return er.async_get(hass).async_get_or_create(
         domain,
-        PROXMOX,
+        entry.domain,
         f"{entry.entry_id}_{unique}",
         config_entry=entry,
         device_id=device.id,
@@ -115,7 +118,9 @@ async def test_inventory(hass: HomeAssistant):
 
     inv = async_inventory(hass).as_dict()
     assert inv["configured"] is True
-    assert inv["entries"] == [{"entry_id": entry.entry_id, "title": "192.168.1.10", "state": "loaded", "loaded": True}]
+    assert inv["entries"] == [
+        {"entry_id": entry.entry_id, "title": "192.168.1.10", "state": "loaded", "loaded": True, "domain": PROXMOX}
+    ]
     [n] = inv["node"]
     assert n["name"] == "pve1" and n["key"] == "node/pve1" and n["node"] is None
     assert set(n["entities"]) == {"cpu", "memory_pct", "running", "start_all", "update"}
@@ -131,8 +136,10 @@ async def test_inventory(hass: HomeAssistant):
     assert set(inv["storage"][0]["entities"]) == {"used_pct", "active"}
 
 
-async def test_inventory_custom_integration(hass: HomeAssistant):
-    entry = MockConfigEntry(domain=PROXMOX, title="pve", state=ConfigEntryState.LOADED)
+@pytest.mark.parametrize("integration", [PROXMOX, PROXMOX_CUSTOM])
+async def test_inventory_custom_integration(hass: HomeAssistant, integration: str):
+    """The custom integration, under proxmoxve up to 5.x (#12) and proxmoxve_custom from 6.0 (#32)."""
+    entry = MockConfigEntry(domain=integration, title="pve", state=ConfigEntryState.LOADED)
     entry.add_to_hass(hass)
     node = _device(hass, entry, "NODE_pve", "Node pve")
     for domain, unique in (
@@ -153,7 +160,13 @@ async def test_inventory_custom_integration(hass: HomeAssistant):
     storage = _device(hass, entry, "STORAGE_local", "Storage local", via=node)
     _entity(hass, entry, storage, "sensor", "local_disk_used_perc")
 
+    # Entities of another platform on the same device are left out
+    er.async_get(hass).async_get_or_create(
+        "sensor", "other", f"{entry.entry_id}_pve_cpu", config_entry=entry, device_id=node.id
+    )
+
     inv = async_inventory(hass).as_dict()
+    assert inv["configured"] is True and inv["entries"][0]["domain"] == integration
     [n] = inv["node"]
     assert n["key"] == "pve"
     assert set(n["entities"]) == {"cpu", "memory_pct", "disk", "running", "backup_problem", "last_backup", "reboot"}

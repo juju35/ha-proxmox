@@ -115,7 +115,7 @@ function pickerDefine(tag, Card, options) {
 }
 
 
-export const PROXMOX_CARDS_VERSION = "1.6.2";
+export const PROXMOX_CARDS_VERSION = "1.7.0";
 const LANGUAGE_NAMES = {
   en: "English", fr: "Français", de: "Deutsch", es: "Español", sr: "Српски", "sr-Latn": "Srpski (latinica)", it: "Italiano",
   nl: "Nederlands", pt: "Português", pl: "Polski", ro: "Română", da: "Dansk", sv: "Svenska", bg: "Български", ru: "Русский",
