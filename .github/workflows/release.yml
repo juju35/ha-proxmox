@@ -45,8 +45,8 @@ jobs:
         run: |
           VERSION="$(jq -r .version custom_components/proxmox_panel/manifest.json)"
           grep -q "VERSION = \"$VERSION\"" custom_components/proxmox_panel/const.py
-          grep -q "PROXMOX_PANEL_VERSION = \"$VERSION\"" custom_components/proxmox_panel/frontend/proxmox-panel.js
-          grep -q "PROXMOX_CARDS_VERSION = \"$VERSION\"" custom_components/proxmox_panel/frontend/proxmox-cards.js
+          grep -q "PROXMOX_PANEL_VERSION = \"$VERSION\"" src/proxmox-panel/core.js
+          grep -q "PROXMOX_CARDS_VERSION = \"$VERSION\"" src/proxmox-cards/constants.js
           grep -q "\"version\": \"$VERSION\"" package.json
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
@@ -54,6 +54,20 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Set up Node
+        if: steps.version.outputs.exists == 'false'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      # The panel and the cards are assembled from src/ (scripts/build-frontend.mjs, not committed): the zip carries
+      # them, and the Marketplace installs the zip (hacs.json zip_release).
+      - name: Build the frontend
+        if: steps.version.outputs.exists == 'false'
+        run: |
+          npm ci
+          node scripts/build-frontend.mjs
 
       - name: Build zip and notes
         if: steps.version.outputs.exists == 'false'

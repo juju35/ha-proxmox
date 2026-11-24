@@ -42,8 +42,8 @@ carries the new version, updated together in one commit:
 1. `CHANGELOG.md` → add a "## X.Y.Z - YYYY-MM-DD" section at the top (`### Features` | `Fixes` | `Performance` | `Maintenance`).
 2. `custom_components/proxmox_panel/manifest.json` → `"version": "X.Y.Z"`.
 3. `custom_components/proxmox_panel/const.py` → `VERSION = "X.Y.Z"`.
-4. `custom_components/proxmox_panel/frontend/proxmox-panel.js` → `PROXMOX_PANEL_VERSION = "X.Y.Z"`.
-5. `custom_components/proxmox_panel/frontend/proxmox-cards.js` → `PROXMOX_CARDS_VERSION = "X.Y.Z"`.
+4. `src/proxmox-panel/core.js` → `PROXMOX_PANEL_VERSION = "X.Y.Z"`.
+5. `src/proxmox-cards/constants.js` → `PROXMOX_CARDS_VERSION = "X.Y.Z"`.
 6. `package.json` → `"version": "X.Y.Z"`.
 7. `package-lock.json` → run `npm install` so its version matches (CI checks it).
 - Bump rule: `fix` → patch, `feat` → minor, breaking change → major.
@@ -63,6 +63,11 @@ carries the new version, updated together in one commit:
 
 ## Supported integrations
 This builds on other Home Assistant integrations, so keep the `## Supported integrations` section (title verbatim) listing the HA integrations it works on top of, with a link to each.
+
+## Source layout
+- The panel and the cards are ES modules in `src/proxmox-panel/` and `src/proxmox-cards/` (entry `src/<stem>/index.js`), assembled by `scripts/build-frontend.mjs` (`scripts/bundle.mjs`, `npm run build`) into `custom_components/proxmox_panel/frontend/<stem>.js`, the module the integration serves: modules concatenated in the order of the entry file, their imports of one another removed. The assembled files are **not committed** (gitignored); `npm test`, `npm run screenshots`, CI and the release build them.
+- Modules share one scope, so top-level names stay unique across modules; a new module must be listed in its `index.js`. `export` is kept only on the names `index.js` re-exports (the file's own exports); imports of the other frontend files (`proxmox-common.js`…) are written from `src/` and rewritten for the assembled file.
+- `proxmox-common.js`, `proxmox-badge.js`, `proxmox-icons.js` (under 40 KB) stay committed as they are.
 
 ## Translations
 - English is the source. Keep every language in sync when a user-facing string changes.

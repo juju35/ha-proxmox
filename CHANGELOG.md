@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.1 - 2026-11-24
+
+### Maintenance
+- The panel and the cards are split into ES modules: `src/proxmox-panel/` and `src/proxmox-cards/` (entry `index.js` in each), cut at their sections. `scripts/build-frontend.mjs` assembles them back, in their original order, into the same `proxmox-panel.js` and `proxmox-cards.js` modules the integration serves; they are no longer committed. The release builds them into `proxmox_panel.zip`, which the Marketplace now installs (`zip_release`).
+
 ## 1.7.0 - 2026-11-23
 
 ### Features
