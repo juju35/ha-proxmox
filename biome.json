@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
   "files": {
-    "includes": ["**/*.js", "**/*.mjs", "!**/dist", "!**/vendor", "!**/node_modules", "!**/*.min.js"]
+    "includes": ["**/*.js", "**/*.mjs", "!**/dist", "!**/vendor", "!**/node_modules", "!**/*.min.js", "!custom_components/proxmox_panel/frontend/proxmox-panel.js", "!custom_components/proxmox_panel/frontend/proxmox-cards.js"]
   },
   "linter": {
     "enabled": true,
@@ -13,5 +13,11 @@
   },
   "formatter": { "enabled": false },
   "assist": { "enabled": false },
-  "javascript": { "globals": ["customElements", "HTMLElement"] }
+  "javascript": { "globals": ["customElements", "HTMLElement"] },
+  "overrides": [
+    {
+      "includes": ["src/proxmox-panel/core.js", "src/proxmox-cards/core.js"],
+      "linter": { "rules": { "correctness": { "noUnusedImports": "off" } } }
+    }
+  ]
 }

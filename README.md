@@ -207,15 +207,15 @@ Sizes are shown in base 1024 (KiB, MiB, GiB, TiB) with 2, 1 or 0 decimals as the
 
 ```bash
 pip install -r requirements_test.txt && pytest   # integration tests (Home Assistant test harness)
-npm ci && npm test                               # panel and card tests
+npm ci && npm test                               # assembles the panel and the cards (npm run build), then their tests
 npm run screenshots                              # renders the panel and the cards with mock data into screenshots/ (GIFs need ffmpeg)
 ```
 
-The panel (`proxmox-panel.js`) and the cards (`proxmox-cards.js`) are plain JavaScript modules in `custom_components/proxmox_panel/frontend/`, sharing `proxmox-common.js` (strings, icons, formatting), served by the integration with their language files (`frontend/i18n/`): nothing to build.
+The panel (`proxmox-panel.js`) and the cards (`proxmox-cards.js`) are plain JavaScript modules served by the integration from `custom_components/proxmox_panel/frontend/`, sharing `proxmox-common.js` (strings, icons, formatting) and their language files (`frontend/i18n/`). Their source is split into ES modules under `src/proxmox-panel/` and `src/proxmox-cards/` (entry `index.js`); `npm run build` (`scripts/build-frontend.mjs`) assembles each into its file in `frontend/`, which is not committed (the release builds it into the zip). The modules share one scope, so top-level names stay unique across them, and a new module must be listed in its `index.js`.
 
 ### Releasing
 
-1. Bump the version in `custom_components/proxmox_panel/manifest.json`, `const.py` (`VERSION`), `frontend/proxmox-panel.js` (`PROXMOX_PANEL_VERSION`), `frontend/proxmox-cards.js` (`PROXMOX_CARDS_VERSION`) and `package.json` (`npm install` updates `package-lock.json`)
+1. Bump the version in `custom_components/proxmox_panel/manifest.json`, `const.py` (`VERSION`), `src/proxmox-panel/core.js` (`PROXMOX_PANEL_VERSION`), `src/proxmox-cards/constants.js` (`PROXMOX_CARDS_VERSION`) and `package.json` (`npm install` updates `package-lock.json`)
 2. Add a `## <version>` section at the top of [CHANGELOG.md](https://github.com/juju35/ha-proxmox/blob/main/CHANGELOG.md)
 3. Push to `main`: the **Release** workflow checks that the versions agree, creates the tag and the GitHub release with the changelog section as notes, and attaches `proxmox_panel.zip`
 

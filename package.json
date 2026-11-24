@@ -1,16 +1,20 @@
 {
   "name": "ha-proxmox",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Home Assistant sidebar panel for the Proxmox VE integration: nodes, virtual machines, containers, storage and backups.",
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check custom_components/proxmox_panel/frontend/proxmox-icons.js",
+    "build": "node scripts/build-frontend.mjs",
+    "check": "node scripts/build-frontend.mjs && node --check custom_components/proxmox_panel/frontend/proxmox-panel.js && node --check custom_components/proxmox_panel/frontend/proxmox-cards.js && node --check custom_components/proxmox_panel/frontend/proxmox-icons.js",
+    "prescreenshots": "node scripts/build-frontend.mjs",
     "screenshots": "node scripts/screenshots.mjs",
+    "pretest": "node scripts/build-frontend.mjs",
     "test": "node --test test/*.test.mjs"
   },
   "license": "MIT",
   "devDependencies": {
+    "acorn": "^8.19.0",
     "playwright": "^1.65.1"
   }
 }
