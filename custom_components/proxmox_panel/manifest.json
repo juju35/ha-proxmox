@@ -2,6 +2,7 @@
   "domain": "proxmox_panel",
   "name": "Proxmox Panel",
   "after_dependencies": ["proxmoxve"],
+  "categories": ["computers_network.nas_servers"],
   "codeowners": ["@juju35"],
   "config_flow": true,
   "dependencies": ["frontend", "http", "lovelace", "panel_custom"],
