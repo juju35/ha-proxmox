@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.2 - 2026-11-27
+
+### Fixes
+- Panel: the links to the Proxmox web interface only open http(s) addresses.
+
 ## 1.7.1 - 2026-11-24
 
 ### Maintenance
