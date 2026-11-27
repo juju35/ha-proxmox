@@ -645,7 +645,8 @@ export class ProxmoxPanel extends HTMLElement {
           return `<button class="act${tone}" data-action="press" data-item="${esc(node.id)}" data-press="${a}">${proxmoxPanelIcon(a)}${esc(this._t(`a_${a}`))}</button>`;
         })
         .join("");
-      const link = node.url ? `<a class="link" href="${esc(node.url)}" target="_blank" rel="noopener noreferrer" title="${esc(this._t("open_proxmox"))}" aria-label="${esc(this._t("open_proxmox"))}">${proxmoxPanelIcon("open")}</a>` : "";
+      // Web links only: a configured or reported URL never becomes a javascript: link.
+      const link = /^https?:\/\//i.test(String(node.url || "")) ? `<a class="link" href="${esc(node.url)}" target="_blank" rel="noopener noreferrer" title="${esc(this._t("open_proxmox"))}" aria-label="${esc(this._t("open_proxmox"))}">${proxmoxPanelIcon("open")}</a>` : "";
       return `<div class="box">
           <div class="nhead"><span class="badge${status === "online" ? "" : " muted"}">${proxmoxPanelIcon("logo")}</span>
             <div class="t"><span class="n">${esc(node.name)}</span><div class="m">${meta}</div></div>
@@ -753,7 +754,7 @@ export class ProxmoxPanel extends HTMLElement {
         return `<button class="act${tone}" data-action="press" data-item="${esc(g.id)}" data-press="${a}">${proxmoxPanelIcon(a)}${esc(this._t(`a_${a}`))}</button>`;
       })
       .join("");
-    const link = g.url ? `<a class="act quiet" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">${proxmoxPanelIcon("open")}${esc(this._t("open_proxmox"))}</a>` : "";
+    const link = /^https?:\/\//i.test(String(g.url || "")) ? `<a class="act quiet" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">${proxmoxPanelIcon("open")}${esc(this._t("open_proxmox"))}</a>` : "";
     return `<div class="detail">${facts.length ? `<div class="m">${facts.join("")}</div>` : ""}<div class="acts">${actions}${link}</div></div>`;
   }
 

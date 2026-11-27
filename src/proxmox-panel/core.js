@@ -54,7 +54,7 @@ import {
   PROXMOX_VARS,
 } from "../../custom_components/proxmox_panel/frontend/proxmox-common.js";
 
-export const PROXMOX_PANEL_VERSION = "1.7.1";
+export const PROXMOX_PANEL_VERSION = "1.7.2";
 // The integrations whose entries the panel reads: the Proxmox VE ones (the custom one moved to proxmoxve_custom in 6.0,
 // #32), then Proxmox Extended Sensors
 export const PROXMOX_PANEL_VE_DOMAINS = ["proxmoxve", "proxmoxve_custom"];
